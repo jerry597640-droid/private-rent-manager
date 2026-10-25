@@ -1,20 +1,26 @@
 # 每月收租管理系統
 
-GitHub Pages 僅提供公開的**安全入口**。實際收租資料必須在受限存取的 Google Apps Script 網頁內處理，不得在公開 GitHub 前端放入租客資料、試算表 ID、Google token 或部署金鑰。
+GitHub Pages 是公開入口；收租表單及資料由僅限本人存取的 Google Apps Script Web App 提供。公開儲存庫只包含程式碼與受 Google 登入保護的 Web App 連結，不包含租客資料、試算表 ID、權杖或金鑰。
 
-## 架構
-- GitHub Pages: `index.html`（手機響應式入口）
-- Google Apps Script: 私人 Web App（`apps-script/Code.gs` 為程式範本，需手動貼入 Apps Script）
-- Google Sheets: 每月分頁，依標題定位欄位
+## 使用
+開啟 GitHub Pages 入口後按「開啟收租管理系統」，使用部署時授權的 Google 帳號登入。選擇月份及物件，填寫日期、金額、收款狀態與備註，確認後儲存。儲存成功會重新讀取資料並保留目前物件。
 
-## Google Apps Script 設定
-1. 在 Apps Script 專案中貼入 `apps-script/Code.gs`。
-2. 專案設定 → 指令碼屬性，新增 `SPREADSHEET_ID`，值為你自己試算表的 ID；**不要放入 GitHub**。
-3. 新增 `Index.html` 並製作表單，透過 `google.script.run.getMonths/getRows/saveRent` 呼叫後端。
-4. 部署為網頁應用程式，執行身分為自己，存取權限設為「只有自己」。
-5. 先在測試副本驗證各月份、日期、金額與勾選，再正式使用。
+## 部署
+1. 在 Apps Script 放入 `apps-script/Code.gs` 和 `apps-script/Index.html`。
+2. 在 Script Properties 設定 `SPREADSHEET_ID`。驗收時指向私人測試副本，`APP_MODE` 保持 `TEST` 或空白。
+3. 部署為網頁應用程式，執行身分「我」、存取權「只有我自己」。Google OAuth 由本人核准。
+4. 在副本實測表單寫入、重新讀取及欄位保留，驗收後才把 `SPREADSHEET_ID` 切回正式試算表，並設定 `APP_MODE=LIVE`。
+5. 入口只連到已驗證的 `/exec` URL。修改程式後需更新既有部署至新版本；Script Properties 不應加入 GitHub。
 
-## 注意
-- 目前 GitHub 入口與 Apps Script 尚未自動連接；此範本不會自行修改試算表。
-- 不同月份可能存在欄位名稱差異，程式遇到不符欄位會停止寫入，避免誤填。
-- 參考開源專案的架構，不直接複製未審核程式。
+## 資料保護
+- 只修改「實際入帳日」「實收金額」「是否已收」「備註」四個輸入欄位。
+- 依唯一欄名定位，兼容各月份不同的欄位順序；缺少或重複欄名時停止寫入。
+- 保留貸款、差額及其他公式。收款輸入欄若是公式或不可編輯，停止寫入。
+- 驗證日期、非負金額、已收款必要欄位；備註以純文字寫入。
+- 以資料版本檢查阻止覆寫已變動的紀錄，並鎖定應用程式的同時儲存操作。
+- 載入月份時停用編輯；讀取失敗後不能用舊資料儲存。
+- 若儲存失敗，請先重新讀取 Google Sheets 核對現況，再決定是否重新儲存。
+- Google Sheets 原有分享權限獨立於 Web App 存取限制，部署不會修改原有分享設定。
+
+## 驗證
+執行 `node verify.cjs`，檢查兩種欄位排列、公式保留、錯誤輸入、資料版本衝突及備註純文字。另須在 Google 測試副本完成實際表單與試算表讀寫驗收。
