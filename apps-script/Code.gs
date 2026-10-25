@@ -171,7 +171,9 @@ function cityExtraHomes_() {
 }
 function cityIslandList_(properties,extra) {
   const islands=properties.map(p=>Object.assign({},p,{hasRecords:true})),known=new Set(islands.map(p=>p.name));
-  extra.forEach(name=>{if(!known.has(name)){known.add(name);islands.push({name:name,hasRecords:false})}});return islands;
+  extra.forEach(name=>{if(!known.has(name)){known.add(name);islands.push({name:name,hasRecords:false})}});
+  const centralOnly=(PropertiesService.getScriptProperties().getProperty('CITY_CENTRAL_ONLY_ISLAND')||'').trim();
+  islands.forEach(island=>{island.centralOnly=island.name===centralOnly});return islands;
 }
 function citySnapshot_(ss,month,today,store) {
   const records=dashboardRows_(ss,month,today),groups=new Map();
@@ -207,5 +209,3 @@ function careResident_(store,p) {
   store.setProperty(key,JSON.stringify(r));return r;
 }
 function careCityResident(p) { const lock=LockService.getScriptLock();lock.waitLock(20000);try{return careResident_(cityStore_(),p)}finally{lock.releaseLock()} }
-
-
