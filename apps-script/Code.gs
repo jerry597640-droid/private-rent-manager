@@ -152,7 +152,7 @@ function getDashboard(month) {
 
 // Residents belong to this private app, never to accounting cells.
 const CITY_PREFIX_='RENT_CITY_RESIDENT_V1_';
-const CITY_KINDS_=['deerfox','owlbunny','catdragon','otterturtle'];
+const CITY_KINDS_=['deerfox','owlbunny','catdragon','otterturtle','pandatanuki','sealpenguin','corgibee','axolotldeer'];
 const CITY_COLORS_=['peach','sage','lavender','honey'];
 function cityStore_() { return PropertiesService.getUserProperties(); }
 function cityId_(id) { if(typeof id!=='string'||!(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i).test(id))throw Error('島民識別資料無效');return id.toLowerCase(); }
