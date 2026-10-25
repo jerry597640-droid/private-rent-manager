@@ -186,7 +186,7 @@ function citySnapshot_(ss,month,today,store) {
   const records=dashboardRows_(ss,month,today),groups=new Map();
   records.forEach(r=>{if(!groups.has(r.property))groups.set(r.property,[]);groups.get(r.property).push(r)});
   const properties=Array.from(groups,([name,list])=>Object.assign({name:name,firstRow:list[0].row},summarize_(list))).sort((a,b)=>a.name.localeCompare(b.name));
-  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,islands:cityIslandList_(properties,cityExtraHomes_()),records:records,residents:cityResidents_(store)};
+  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,islands:cityIslandList_(properties,cityExtraHomes_()),records:records,residents:cityResidents_(store),buildings:cityBuildings_(store)};
 }
 function getCitySnapshot(month) { const ss=book_();return citySnapshot_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'),cityStore_()); }
 function createResident_(store,p,homes) {
@@ -218,3 +218,34 @@ function careResident_(store,p) {
 function careCityResident(p) { const lock=LockService.getScriptLock();lock.waitLock(20000);try{return careResident_(cityStore_(),p)}finally{lock.releaseLock()} }
 
 
+
+// Building configuration belongs to the private app, never to accounting cells.
+const CITY_BUILDING_PREFIX_='RENT_CITY_BUILDING_V1_';
+const CITY_BUILDING_TYPES_=['bungalow','villa','townhouse','duplex','apartment','tower','courtyard','shopfront'];
+const CITY_BUILDING_STYLES_=['nordic','japanese','mediterranean','modern','brick','pastel'];
+const CITY_BUILDING_ROOMS_=['studio','one','two','three','four','open'];
+function cityBuildingKey_(home,plot){return CITY_BUILDING_PREFIX_+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify([home,plot])))}
+function cityBuildingValid_(r){return r&&typeof r.home==='string'&&Array.from(r.home).length<=120&&Number.isInteger(r.plot)&&(r.home===''?[13,15,17].includes(r.plot):r.plot===0)&&Number.isInteger(r.version)&&r.version>0&&(r.type===null||CITY_BUILDING_TYPES_.includes(r.type)&&CITY_BUILDING_STYLES_.includes(r.style)&&CITY_BUILDING_ROOMS_.includes(r.rooms)&&Number.isInteger(r.floors)&&r.floors>=1&&r.floors<=12&&Number.isInteger(r.rotation)&&r.rotation>=0&&r.rotation<=3)}
+function cityBuildingPublic_(r){return {home:r.home,plot:r.plot,type:r.type,style:r.style,rooms:r.rooms,floors:r.floors,rotation:r.rotation,version:r.version}}
+function cityBuildings_(store){const values=store.getProperties();return Object.keys(values).filter(k=>k.startsWith(CITY_BUILDING_PREFIX_)).map(k=>{let r;try{r=JSON.parse(values[k])}catch(e){}if(!cityBuildingValid_(r))throw Error('建築配置無法讀取，請重新同步');return cityBuildingPublic_(r)})}
+function saveCityBuilding(p){
+  if(!p||typeof p!=='object'||!['place','remove'].includes(p.action))throw Error('建築操作無效');
+  const ss=book_();sheet_(ss,p.month);
+  const homes=dashboardRows_(ss,p.month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd')).map(r=>r.property).concat(cityExtraHomes_());
+  if(typeof p.home!=='string'||Array.from(p.home).length>120||p.home!==''&&!homes.includes(p.home))throw Error('請選擇有效的島嶼');
+  if(!Number.isInteger(p.plot)||(p.home===''?![13,15,17].includes(p.plot):p.plot!==0))throw Error('這個地塊保留給地標、設施或步道，請選可配置基地');
+  if(!Number.isInteger(p.version)||p.version<0)throw Error('建築版本無效，請重新同步');
+  const operationId=cityId_(p.operationId),removing=p.action==='remove';
+  const fields={home:p.home,plot:p.plot,type:removing?null:p.type,style:removing?null:p.style,rooms:removing?null:p.rooms,floors:removing?null:p.floors,rotation:removing?null:p.rotation};
+  if(!cityBuildingValid_({...fields,version:1}))throw Error('請選擇支援的建築、風格、房型、樓層與朝向');
+  const lock=LockService.getScriptLock();lock.waitLock(20000);
+  try{
+    const store=cityStore_(),key=cityBuildingKey_(p.home,p.plot),text=store.getProperty(key),old=text?JSON.parse(text):null;
+    if(old&&!cityBuildingValid_(old))throw Error('建築配置無法讀取，請重新同步');
+    if(old?.lastOperationId===operationId){if(JSON.stringify({...cityBuildingPublic_(old),version:0})!==JSON.stringify({...fields,version:0}))throw Error('儲存請求已使用，請重新開啟建築工坊');return cityBuildingPublic_(old)}
+    if((old?.version||0)!==p.version)throw Error('此基地配置已被更新。請關閉工坊並按「立即同步」，再重新配置');
+    if(!old&&Object.keys(store.getProperties()).filter(k=>k.startsWith(CITY_BUILDING_PREFIX_)).length>=128)throw Error('建築配置已達容量上限');
+    const saved={...fields,version:p.version+1,lastOperationId:operationId};
+    store.setProperty(key,JSON.stringify(saved));return cityBuildingPublic_(saved);
+  }finally{lock.releaseLock()}
+}
