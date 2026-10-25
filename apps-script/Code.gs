@@ -72,7 +72,7 @@ function saveRent(p) {
   } finally {lock.releaseLock();}
 }
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Index').setTitle('每月收租管理').addMetaTag('viewport','width=device-width, initial-scale=1');
+  return HtmlService.createTemplateFromFile('Index').evaluate().setTitle('棲島日常｜每月收租管理').addMetaTag('viewport','width=device-width, initial-scale=1');
 }
 
 // Dashboard reads only. No writes, cross-user cache, or client-supplied file IDs.
@@ -149,3 +149,51 @@ function dashboard_(ss,month,today) {
 function getDashboard(month) {
   const ss=book_();return dashboard_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'));
 }
+
+// Residents belong to this private app, never to accounting cells.
+const CITY_PREFIX_='RENT_CITY_RESIDENT_V1_';
+const CITY_KINDS_=['deerfox','owlbunny','catdragon','otterturtle'];
+const CITY_COLORS_=['peach','sage','lavender','honey'];
+function cityStore_() { return PropertiesService.getUserProperties(); }
+function cityId_(id) { if(typeof id!=='string'||!(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i).test(id))throw Error('島民識別資料無效');return id.toLowerCase(); }
+function cityResidents_(store) {
+  const values=store.getProperties();return Object.keys(values).filter(k=>k.startsWith(CITY_PREFIX_)).map(k=>{
+    try{const r=JSON.parse(values[k]);if(r.id&&r.name&&CITY_KINDS_.includes(r.kind)&&CITY_COLORS_.includes(r.color))return r}catch(e){}
+    throw Error('島民資料無法讀取，請稍後再試');
+  }).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+}
+function citySnapshot_(ss,month,today,store) {
+  const records=dashboardRows_(ss,month,today),groups=new Map();
+  records.forEach(r=>{if(!groups.has(r.property))groups.set(r.property,[]);groups.get(r.property).push(r)});
+  const properties=Array.from(groups,([name,list])=>Object.assign({name:name,firstRow:list[0].row},summarize_(list))).sort((a,b)=>a.name.localeCompare(b.name));
+  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,records:records,residents:cityResidents_(store)};
+}
+function getCitySnapshot(month) { const ss=book_();return citySnapshot_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'),cityStore_()); }
+function createResident_(store,p,homes) {
+  if(!p||typeof p!=='object')throw Error('請填寫島民資料');
+  const id=cityId_(p.id);
+  if(typeof p.name!=='string'||Array.from(p.name.trim()).length<1||Array.from(p.name.trim()).length>20||/[\u0000-\u001f\u007f]/.test(p.name))throw Error('名字請填 1 至 20 個字');
+  if(!CITY_KINDS_.includes(p.kind)||!CITY_COLORS_.includes(p.color))throw Error('請選擇支援的精靈外型');
+  if(typeof p.home!=='string'||(p.home!==''&&!homes.includes(p.home)))throw Error('請選擇有效的居住島嶼');
+  if(Array.from(p.home).length>120)throw Error('物件名稱過長，請選中央廣場');
+  const key=CITY_PREFIX_+id,old=store.getProperty(key);
+  if(old){const r=JSON.parse(old);if(r.name===p.name.trim()&&r.kind===p.kind&&r.color===p.color&&r.home===p.home)return r;throw Error('新增請求已使用，請重新開啟邀請視窗')}
+  if(cityResidents_(store).length>=24)throw Error('城市目前最多可入住 24 位精靈');
+  const r={id:id,name:p.name.trim(),kind:p.kind,color:p.color,home:p.home,hearts:0,visits:0,createdAt:new Date().toISOString(),lastActionId:''};
+  store.setProperty(key,JSON.stringify(r));return r;
+}
+function createCityResident(p) {
+  const ss=book_(),month=p&&p.month;sheet_(ss,month);
+  const homes=dashboardRows_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd')).map(r=>r.property),lock=LockService.getScriptLock();lock.waitLock(20000);
+  try{return createResident_(cityStore_(),p,homes)}finally{lock.releaseLock()}
+}
+function careResident_(store,p) {
+  if(!p||!['wave','fruit'].includes(p.action))throw Error('互動方式無效');
+  const id=cityId_(p.id),operationId=cityId_(p.operationId),key=CITY_PREFIX_+id,text=store.getProperty(key);
+  if(!text)throw Error('找不到這位島民，請重新同步');
+  const r=JSON.parse(text);if(r.lastActionId===operationId)return r;
+  r.hearts=Math.min(999,(Number(r.hearts)||0)+(p.action==='fruit'?2:1));r.visits=Math.min(9999,(Number(r.visits)||0)+1);r.lastActionId=operationId;r.lastSeen=new Date().toISOString();
+  store.setProperty(key,JSON.stringify(r));return r;
+}
+function careCityResident(p) { const lock=LockService.getScriptLock();lock.waitLock(20000);try{return careResident_(cityStore_(),p)}finally{lock.releaseLock()} }
+

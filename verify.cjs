@@ -15,13 +15,14 @@ function fixture(loan=false){
  });
  sh.getDataRange=()=>sh.getRange(1,1,values.length,h.length);
  const ss={getSheets:()=>[sh],getSheetByName:()=>sh,getSpreadsheetTimeZone:()=> 'Asia/Taipei'};
- const ctx={Date,PropertiesService:{getScriptProperties:()=>({getProperty:k=>k==='SPREADSHEET_ID'?'test-copy':'TEST'})},
+ const userValues={},userStore={getProperties:()=>({...userValues}),getProperty:k=>userValues[k]??null,setProperty:(k,v)=>{userValues[k]=v},deleteProperty:k=>{delete userValues[k]}};
+ const ctx={Date,PropertiesService:{getScriptProperties:()=>({getProperty:k=>k==='SPREADSHEET_ID'?'test-copy':'TEST'}),getUserProperties:()=>userStore},
  SpreadsheetApp:{openById:()=>ss,flush:()=>{}},LockService:{getScriptLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},
  Utilities:{DigestAlgorithm:{SHA_256:'sha256'},computeDigest:(_,s)=>crypto.createHash('sha256').update(s).digest(),base64EncodeWebSafe:b=>Buffer.from(b).toString('base64url'),
  parseDate:s=>new Date(s.slice(0,10)+'T12:00:00+08:00'),formatDate:d=>new Date(d.getTime()+8*3600*1000).toISOString().slice(0,10)}};
  vm.createContext(ctx);vm.runInContext(code,ctx);
  const row=ctx.getRows('2026-10')[0];
- return {ctx,ss,sh,values,formulas,h,writes,p:{...row,month:'2026-10',date:'2026-10-26',amount:'123.45',paid:true,note:'驗收'}};
+ return {ctx,ss,sh,values,formulas,h,writes,userStore,userValues,p:{...row,month:'2026-10',date:'2026-10-26',amount:'123.45',paid:true,note:'驗收'}};
 }
 function check(name,fn){fn();count++;console.log('PASS '+name)}
 for(const loan of [false,true])check('write only correct input columns; loan='+loan,()=>{
@@ -61,6 +62,17 @@ check('trend compares the actual previous calendar month',()=>{const f=fixture()
 check('empty month stays valid with zero records',()=>{const f=fixture();f.values.splice(1);f.formulas.splice(1);const d=dash(f);assert.equal(d.summary.count,0);assert.equal(d.summary.rate,null);assert.equal(d.properties.length,0)});
 check('dashboard rejects invalid month and duplicate optional headers',()=>{const f=fixture();assert.throws(()=>f.ctx.getDashboard('2026-13'));f.h[3]='本月應收';assert.throws(()=>dash(f),/重複/);assert.equal(f.writes.length,0)});
 check('dashboard omits notes and row-version hashes',()=>{const f=fixture();field(f,'備註','private note');const d=dash(f);assert.equal(JSON.stringify(d).includes('private note'),false);assert.equal('version' in d.records[0],false)});
+const residentPayload={id:'11111111-1111-4111-8111-111111111111',name:'栗栗',kind:'deerfox',color:'peach',home:'測試物件',month:'2026-10'};
+check('city snapshot reads only selected month and contains no notes',()=>{const f=fixture();field(f,'備註','private note');const d=f.ctx.getCitySnapshot('2026-10');assert.equal(d.summary.count,1);assert.equal(d.properties.length,1);assert.equal(d.residents.length,0);assert.equal(JSON.stringify(d).includes('private note'),false);assert.equal(f.writes.length,0);assert.equal(Object.keys(f.userValues).length,0)});
+check('resident saves in separate user properties and survives reads',()=>{const f=fixture(),r=f.ctx.createCityResident(residentPayload);assert.equal(r.name,'栗栗');assert.equal(f.ctx.getCitySnapshot('2026-10').residents[0].home,'測試物件');assert.equal(f.writes.length,0)});
+check('resident create retries are idempotent',()=>{const f=fixture();f.ctx.createCityResident(residentPayload);f.ctx.createCityResident(residentPayload);assert.equal(Object.keys(f.userValues).length,1);assert.throws(()=>f.ctx.createCityResident({...residentPayload,name:'other'}),/已使用/)});
+for(const [key,value] of [['id','bad'],['name',' '],['name','a'.repeat(21)],['name','bad\nname'],['kind','unknown'],['color','url(x)'],['home','unknown'],['month','2026-13']])check('resident invalid '+key+' rejected',()=>{const f=fixture();assert.throws(()=>f.ctx.createCityResident({...residentPayload,[key]:value}));assert.equal(Object.keys(f.userValues).length,0);assert.equal(f.writes.length,0)});
+check('resident care persists and duplicate request is counted once',()=>{const f=fixture();f.ctx.createCityResident(residentPayload);const p={id:residentPayload.id,action:'fruit',operationId:'22222222-2222-4222-8222-222222222222'};f.ctx.careCityResident(p);const r=f.ctx.careCityResident(p);assert.equal(r.hearts,2);assert.equal(r.visits,1);assert.equal(f.ctx.getCitySnapshot('2026-10').residents[0].hearts,2);assert.equal(f.writes.length,0)});
+check('resident care rejects unknown resident or action',()=>{const f=fixture();assert.throws(()=>f.ctx.careCityResident({id:residentPayload.id,action:'fruit',operationId:'22222222-2222-4222-8222-222222222222'}),/找不到/);f.ctx.createCityResident(residentPayload);assert.throws(()=>f.ctx.careCityResident({id:residentPayload.id,action:'delete',operationId:'22222222-2222-4222-8222-222222222222'}),/無效/)});
+check('resident population cap rejects 25th and permits retry at cap',()=>{const f=fixture();for(let i=0;i<24;i++)f.ctx.createCityResident({...residentPayload,id:String(i).padStart(8,'0')+'-1111-4111-8111-111111111111'});assert.throws(()=>f.ctx.createCityResident(residentPayload),/24/);f.ctx.createCityResident({...residentPayload,id:'00000000-1111-4111-8111-111111111111'});assert.equal(Object.keys(f.userValues).length,24)});
+check('resident home mismatch does not affect accounting data',()=>{const f=fixture();f.ctx.createCityResident(residentPayload);field(f,'物件名稱','new property');const d=f.ctx.getCitySnapshot('2026-10');assert.equal(d.residents[0].home,'測試物件');assert.equal(d.properties[0].name,'new property');assert.equal(f.writes.length,0)});
 const html=fs.readFileSync(__dirname+'/apps-script/Index.html','utf8');
 new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1]);
+new vm.Script(fs.readFileSync(__dirname+'/apps-script/City.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1]);
 console.log(count+' backend checks passed; frontend syntax passed');
+

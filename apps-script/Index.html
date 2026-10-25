@@ -3,6 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="utf-8">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     :root{color-scheme:light;--ink:#18343a;--muted:#65787c;--accent:#176b60;--accent-dark:#11574e;--line:#dce5e3;--surface:#fff;--bg:#f3f6f5;--soft:#eaf4ef;--amber:#9a631d;--red:#b13b36;--radius:18px}
@@ -49,8 +50,9 @@
     <div class="brand"><span class="brandmark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V5l8-3v19M12 8l8 3v10M2 21h20M7.5 7v1m0 4v1m0 4v1M16 12v1m0 4v1"/></svg></span><div><small>YOUR RENT WORKSPACE</small><h1>每月收租管理</h1></div></div>
     <div class="top-actions"><span class="mode" id="mode">私人工作台</span><button class="icon-button" id="reload" type="button" aria-label="重新讀取資料" title="重新讀取資料"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 19.4 9M4.6 15a8 8 0 0 0 13.3 2.9"/></svg><span class="refresh-label">重新讀取</span></button></div>
   </header>
-  <nav class="view-tabs" aria-label="工作台功能"><button type="button" id="nav-dashboard" aria-pressed="true" aria-controls="dashboard-view">收租戰情室</button><button type="button" id="nav-entry" aria-pressed="false" aria-controls="entry-view">收款登錄</button></nav>
-  <section id="dashboard-view" aria-label="收租戰情室">
+  <nav class="view-tabs" aria-label="工作台功能"><button type="button" id="nav-city" aria-pressed="true" aria-controls="city-view">島嶼城市</button><button type="button" id="nav-dashboard" aria-pressed="false" aria-controls="dashboard-view">收租戰情室</button><button type="button" id="nav-entry" aria-pressed="false" aria-controls="entry-view">收款登錄</button></nav>
+  <?!= HtmlService.createHtmlOutputFromFile('City').getContent(); ?>
+  <section id="dashboard-view" aria-label="收租戰情室" hidden>
     <div class="dash-heading"><div><p class="section-label">RENT INTELLIGENCE</p><h2>收租戰情室</h2><p id="dash-updated">掌握每一筆收款，安排下一步。</p></div><div class="dash-period"><label class="field-label" for="dash-month">檢視月份</label><select id="dash-month" disabled></select></div></div>
     <div id="dash-status" class="status dash-status" data-kind="busy" role="status" aria-live="polite">正在準備收租戰情室…</div>
     <div id="dash-content" hidden>
@@ -112,7 +114,7 @@
 <script>
 const $=id=>document.getElementById(id),filterButtons=[...document.querySelectorAll('[data-filter]')];
 let rows=[],busy=true,loadedMonth='',request=0,selectedRow=null,filter='all',pendingAction=null;
-let activeView='dashboard',dashBusy=false,dashRequest=0,dashData=null,attentionFilter='all';
+let activeView='city',dashBusy=false,dashRequest=0,dashData=null,attentionFilter='all';
 const money=value=>Number(value||0).toLocaleString('zh-TW',{maximumFractionDigits:2});
 const current=()=>rows.find(r=>r.row===selectedRow);
 const visibleRows=()=>rows.filter(r=>filter==='all'||(filter==='paid'?r.paid:!r.paid));
@@ -120,8 +122,8 @@ function setStatus(text,kind='neutral'){$('status').textContent=text;$('status')
 function dirty(){const r=current();return !!r&&($('date').value!==(r.date||'')||$('amount').value!==String(r.amount??'')||$('paid').checked!==!!r.paid||$('note').value!==(r.note||''))}
 function updateControls(){
   const r=current(),list=visibleRows(),index=list.findIndex(x=>x.row===selectedRow);
-  $('month').disabled=busy;$('reload').disabled=busy||dashBusy;
-  ['nav-dashboard','nav-entry','dash-month'].forEach(id=>$(id).disabled=busy||dashBusy);
+  $('month').disabled=busy;$('reload').disabled=busy||dashBusy||City.loading;
+  ['nav-city','nav-dashboard','nav-entry','dash-month','city-month'].forEach(id=>$(id).disabled=busy||dashBusy||City.loading);
   ['item','date','amount','paid','note'].forEach(id=>$(id).disabled=busy||!r);
   filterButtons.forEach(b=>b.disabled=busy);
   document.querySelectorAll('.property-button').forEach(b=>b.disabled=busy);
@@ -180,17 +182,18 @@ function fail(error){
   $('empty-title').textContent='暫時無法讀取資料';$('empty-message').textContent='您的修改尚未確認，請重新讀取資料後核對。';
   setStatus('操作失敗：'+(error?.message||error)+'。請按右上角重新讀取。','error');
   if(activeView==='dashboard'){$('dash-content').hidden=true;dashStatus('無法讀取月份：'+(error?.message||error)+'。請重新讀取。','error')}
+  if(activeView==='city')City.error('無法讀取月份：'+(error?.message||error)+'。請重新讀取。');
 }
 function loadMonths(preferred){
   setBusy(true);setStatus('正在讀取月份…','busy');
   google.script.run.withSuccessHandler(ctx=>{
     $('mode').textContent=ctx.testMode?'測試副本':'正式收租工作台';$('mode').classList.toggle('test',ctx.testMode);
-    ['month','dash-month'].forEach(id=>{$(id).replaceChildren();ctx.months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m.replace('-',' 年 ')+' 月';$(id).append(o)})});
+    ['month','dash-month','city-month'].forEach(id=>{$(id).replaceChildren();ctx.months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m.replace('-',' 年 ')+' 月';$(id).append(o)})});
     if(!ctx.months.length){fail('找不到月份分頁');return}
     const present=(ctx.today||'').slice(0,7),past=ctx.months.filter(m=>m<=present);
     const initial=ctx.months.includes(preferred)?preferred:past[past.length-1]||ctx.months[ctx.months.length-1];
-    $('month').value=initial;$('dash-month').value=initial;setBusy(false);
-    if(activeView==='dashboard')loadDashboard();else loadRows();
+    $('month').value=initial;$('dash-month').value=initial;$('city-month').value=initial;setBusy(false);
+    if(activeView==='city')City.load();else if(activeView==='dashboard')loadDashboard();else loadRows();
   }).withFailureHandler(fail).getContext();
 }
 function loadRows(message,preferred){
@@ -206,7 +209,7 @@ $('month').addEventListener('change',()=>{const next=$('month').value;if(dirty()
 $('item').addEventListener('change',()=>{const next=Number($('item').value);$('item').value=String(selectedRow);changeRecord(()=>selectRecord(next))});
 filterButtons.forEach(b=>b.addEventListener('click',()=>{if(busy||b.dataset.filter===filter)return;changeRecord(()=>{filter=b.dataset.filter;const list=visibleRows();if(!list.some(r=>r.row===selectedRow))selectedRow=list[0]?.row??null;renderList();renderForm();setStatus(list.length?'已篩選收款狀態。':'這個月份沒有符合狀態的物件。')})}));
 ['prev','next'].forEach(id=>$(id).addEventListener('click',()=>{const list=visibleRows(),i=list.findIndex(r=>r.row===selectedRow),next=list[i+(id==='prev'?-1:1)];if(!busy&&next)changeRecord(()=>selectRecord(next.row))}));
-$('reload').addEventListener('click',()=>{if(!busy&&!dashBusy)changeRecord(()=>loadMonths(activeView==='dashboard'?$('dash-month').value:loadedMonth))});
+$('reload').addEventListener('click',()=>{if(!busy&&!dashBusy&&!City.loading)changeRecord(()=>loadMonths(activeView==='city'?$('city-month').value:activeView==='dashboard'?$('dash-month').value:loadedMonth))});
 ['date','amount','paid','note'].forEach(id=>$(id).addEventListener('input',updateControls));
 $('rent-form').addEventListener('submit',event=>{
   event.preventDefault();const r=current();if(!r||busy||!dirty()||loadedMonth!==$('month').value)return;
@@ -222,15 +225,16 @@ $('rent-form').addEventListener('submit',event=>{
 });
 function dashStatus(text,kind='neutral'){$('dash-status').textContent=text;$('dash-status').dataset.kind=kind}
 function activateView(view){
-  activeView=view;$('dashboard-view').hidden=view!=='dashboard';$('entry-view').hidden=view!=='entry';
-  $('nav-dashboard').setAttribute('aria-pressed',String(view==='dashboard'));$('nav-entry').setAttribute('aria-pressed',String(view==='entry'));
+  activeView=view;$('city-view').hidden=view!=='city';$('dashboard-view').hidden=view!=='dashboard';$('entry-view').hidden=view!=='entry';
+  ['city','dashboard','entry'].forEach(v=>$('nav-'+v).setAttribute('aria-pressed',String(view===v)));City.wake();
 }
-['dashboard','entry'].forEach(view=>$('nav-'+view).addEventListener('click',()=>{
-  if(busy||dashBusy||activeView===view)return;
+['city','dashboard','entry'].forEach(view=>$('nav-'+view).addEventListener('click',()=>{
+  if(busy||dashBusy||City.loading||activeView===view)return;
+  const chosen=activeView==='city'?$('city-month').value:activeView==='dashboard'?$('dash-month').value:$('month').value;
   changeRecord(()=>{
     renderForm();
-    if(view==='entry'){$('month').value=$('dash-month').value;filter='all';activateView(view);loadRows()}
-    else{$('dash-month').value=$('month').value;activateView(view);loadDashboard()}
+    ['month','dash-month','city-month'].forEach(id=>$(id).value=chosen);activateView(view);
+    if(view==='entry'){filter='all';loadRows()}else if(view==='city')City.load();else loadDashboard();
   });
 }));
 $('dash-month').addEventListener('change',()=>{attentionFilter='all';$('attention-search').value='';loadDashboard()});
@@ -306,6 +310,7 @@ function renderProperties(){
   });if(!dashData.properties.length)container.append(node('div','這個月份尚無收租物件。','dash-empty'));
 }
 function openDashboardRecord(row){if(busy||dashBusy||!dashData)return;$('month').value=dashData.month;filter='all';activateView('entry');loadRows(undefined,row);$('entry-view').scrollIntoView({block:'start'})}
+function openCityRecord(month,row){if(busy||dashBusy||City.loading)return;$('month').value=month;filter='all';activateView('entry');loadRows(undefined,row);$('entry-view').scrollIntoView({block:'start'})}
 loadMonths();
 </script>
 </body>
