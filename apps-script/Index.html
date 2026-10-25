@@ -1,56 +1,186 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><base target="_top"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;background:#f3f6fa;color:#16263f}header{background:#142b4d;color:white;padding:24px 18px 38px}h1{font-size:24px;margin:0 0 7px}main{max-width:780px;margin:-18px auto 30px;padding:0 14px}.card{background:white;border-radius:17px;padding:20px;margin-bottom:15px;box-shadow:0 6px 24px #122b4812}label{display:block;font-weight:700;margin:13px 0 7px}select,input,textarea{width:100%;border:1px solid #b8c6d6;border-radius:10px;padding:13px;font-size:16px;background:white}input:focus,select:focus,textarea:focus{outline:2px solid #82b8ec}button{width:100%;background:#1768b5;border:0;color:white;font-size:16px;font-weight:700;padding:15px;border-radius:11px;margin-top:15px}button:disabled{opacity:.55}small,.muted{color:#65758b}header small{color:#c3d7ef}.row{display:grid;grid-template-columns:1fr 1fr;gap:13px}.status{padding:12px;border-radius:9px;background:#eef5fc;margin-top:12px}.check{display:flex;gap:12px;align-items:center;margin-top:18px}.check input{width:23px;height:23px}.sum{font-weight:700;font-size:18px}@media(max-width:550px){.row{grid-template-columns:1fr}.card{padding:17px}} </style></head><body><header><h1>每月收租管理</h1><small id="mode">私人 Google Sheets 收款工作台</small></header><main><section class="card"><label for="month">收租月份</label><select id="month"></select><label for="item">收租物件／類型</label><select id="item"></select><div class="row"><div><label for="date">實際入帳日</label><input id="date" type="date"></div><div><label for="amount">實收金額（元）</label><input id="amount" type="number" min="0" step="0.01"></div></div><label class="check"><input id="paid" type="checkbox">確認已收款</label><label for="note">備註</label><textarea id="note" rows="2" maxlength="500"></textarea><button id="save" disabled>儲存至 Google Sheets</button><button id="reload" type="button">重新讀取</button><div class="status" id="status" role="status">正在讀取月份…</div></section><section class="card"><div class="sum" id="summary">當月收款概況</div><p class="muted">僅讀取已授權的試算表。儲存前請確認月份、物件與金額。</p></section></main><script>const $=id=>document.getElementById(id);
-let rows=[],busy=true,loadedMonth='',request=0;
-function status(s){$('status').textContent=s}
-function controls(disabled){
-  busy=disabled;
-  ['month','item','date','amount','paid','note'].forEach(id=>$(id).disabled=disabled);
-  $('save').disabled=disabled||!rows.length;
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{color-scheme:light;--ink:#18343a;--muted:#65787c;--accent:#176b60;--accent-dark:#11574e;--line:#dce5e3;--surface:#fff;--bg:#f3f6f5;--soft:#eaf4ef;--amber:#9a631d;--red:#b13b36;--radius:18px}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Microsoft JhengHei","Noto Sans TC",sans-serif;-webkit-font-smoothing:antialiased}
+    button,input,select,textarea{font:inherit}button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:disabled{cursor:default;opacity:.48}
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #73ad9d;outline-offset:3px}button,input,select,textarea{transition:background .15s,border-color .15s,box-shadow .15s}
+    [hidden]{display:none!important}.wrap{max-width:1160px;padding:28px 30px 36px;margin:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}
+    .brand{display:flex;align-items:center;gap:12px}.brandmark{height:44px;width:44px;border-radius:13px;background:var(--ink);color:white;display:grid;place-items:center;flex-shrink:0}
+    svg{display:block;width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}.brand small{font-size:10px;letter-spacing:2px;color:var(--muted);display:block;margin-bottom:4px}
+    h1{font-size:23px;letter-spacing:.02em;margin:0;font-weight:750}.top-actions{display:flex;align-items:center;gap:12px}.mode{font-size:12px;color:var(--accent);background:#e5efea;padding:8px 11px;border-radius:99px;font-weight:650}.mode.test{background:#fff1db;color:#845813}
+    .icon-button{border:1px solid var(--line);background:white;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:11px;min-height:42px;padding:0 13px;font-size:13px;color:var(--ink)}
+    .overview{background:var(--ink);color:white;border-radius:22px;padding:27px 30px;display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:28px;align-items:center;margin-bottom:24px;position:relative;overflow:hidden}
+    .metric-label{font-size:12px;color:#bbd0cf;letter-spacing:.04em;margin-bottom:10px}.metric-value{font-size:31px;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.03em}.metric-value .currency{font-size:14px;color:#bbd0cf;letter-spacing:0;font-weight:500;margin-right:7px}
+    .metric-count{font-size:30px;font-weight:650}.metric-count small{font-size:12px;color:#bbd0cf;font-weight:400;margin-left:6px}.metric:not(:first-child){border-left:1px solid #3a5357;padding-left:28px}.progress{height:4px;background:#42605e;border-radius:20px;margin-top:14px;overflow:hidden;max-width:180px}.progress span{display:block;width:0;height:100%;background:#92d4b5;border-radius:20px;transition:width .3s}.submetric{color:#bbd0cf;font-size:11px;margin-top:9px}
+    .workspace{display:grid;grid-template-columns:300px minmax(0,1fr);gap:22px;align-items:start}.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 4px 16px #15382c03}.selector{padding:22px}.section-label{font-size:11px;text-transform:uppercase;letter-spacing:1.7px;color:var(--muted);margin:0 0 9px}.field-label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:650;margin:0 0 9px}
+    select,input,textarea{color:var(--ink);width:100%;min-width:0;background:#fff;border:1px solid #cedbd7;border-radius:11px;padding:13px 14px;font-size:16px;line-height:1.5}select{min-height:49px;padding-right:28px}input:disabled,select:disabled,textarea:disabled{background:#f3f6f5;color:#81928e}
+    .filters{display:grid;grid-template-columns:repeat(3,1fr);background:#eff3f1;padding:4px;border-radius:11px;margin:20px 0 14px;gap:3px}.filter{border:0;background:transparent;color:var(--muted);border-radius:8px;min-height:36px;font-size:12px;font-weight:650;padding:6px 2px}.filter[aria-pressed="true"]{background:white;color:var(--accent);box-shadow:0 2px 6px #163b2d0a}
+    .property-list{display:grid;gap:6px;max-height:500px;overflow:auto;padding:2px;margin:0 -2px}.property-button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:1px solid transparent;border-radius:12px;background:white;text-align:left;color:var(--ink);padding:13px 11px}.property-button:hover{background:#f5f8f6}.property-button[aria-pressed="true"]{border-color:#a9cdbc;background:#edf5f0}.property-name{font-size:14px;font-weight:650;display:block;word-break:break-word}.property-type{display:block;font-size:11px;color:var(--muted);margin-top:5px}.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-right:4px}.dot.paid{background:var(--accent)}.tiny-status{font-size:11px;white-space:nowrap;color:var(--muted)}
+    .picker{display:none}.list-empty{padding:24px 10px;text-align:center;font-size:13px;color:var(--muted)}.selector-foot{font-size:11px;color:var(--muted);line-height:1.65;margin:18px 0 0;padding-top:15px;border-top:1px solid var(--line)}
+    .detail{padding:26px 28px 0;overflow:hidden}.detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:24px}.detail h2{margin:4px 0 7px;font-size:24px;font-weight:700;word-break:break-word}.detail-meta{font-size:12px;color:var(--muted)}.badge{border-radius:99px;background:#fff3df;color:var(--amber);font-size:12px;font-weight:650;padding:7px 11px;white-space:nowrap}.badge.paid{background:var(--soft);color:var(--accent)}
+    .fields{display:grid;grid-template-columns:1fr 1fr;gap:18px}.amount-wrap{position:relative}.amount-wrap .prefix{position:absolute;left:14px;top:16px;color:var(--muted);font-size:13px}.amount-wrap input{padding-left:48px;font-size:23px;font-weight:650;height:62px;font-variant-numeric:tabular-nums}input[type=date]{height:62px}.field-help{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.6}.optional{font-size:11px;color:var(--muted);font-weight:400}
+    .paid-control{margin:23px 0;padding:15px 16px;border:1px solid var(--line);border-radius:12px;display:flex;gap:13px;align-items:center;cursor:pointer;background:#f8faf9}.paid-control:has(input:checked){background:var(--soft);border-color:#c5ddcf}.paid-control input{appearance:none;width:23px;height:23px;border-radius:7px;flex-shrink:0;min-height:0;margin:0;padding:0;display:grid;place-items:center;border:1.5px solid #a6bdb4;background:#fff}.paid-control input:checked{background:var(--accent);border-color:var(--accent)}.paid-control input:checked:after{content:"";width:7px;height:12px;border:solid white;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}.paid-control strong{font-size:14px;display:block}.paid-control small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+    textarea{resize:vertical;min-height:85px;max-height:240px;font-size:15px}.note-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted);margin-top:7px}.status{font-size:13px;line-height:1.6;padding:12px 14px;border-radius:10px;margin:20px 0;color:var(--muted);background:#f4f7f5;display:flex;align-items:flex-start;gap:8px}.status[data-kind=success]{color:#16614d;background:#edf6ef}.status[data-kind=error]{background:#fff0ee;color:var(--red)}.status[data-kind=busy]::before{content:"";width:13px;height:13px;border:2px solid #cadbd1;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;margin-top:3px}@keyframes spin{to{transform:rotate(360deg)}}
+    .savebar{border-top:1px solid var(--line);margin:0 -28px;padding:18px 28px;display:flex;justify-content:space-between;gap:16px;align-items:center;background:white}.save-note{font-size:12px;color:var(--muted);line-height:1.65}.save-note strong{display:block;font-weight:500;color:var(--ink)}.primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:var(--accent);border:1px solid var(--accent);color:white;font-weight:650;font-size:14px;min-height:48px;padding:12px 25px;border-radius:11px;white-space:nowrap}.primary:hover:not(:disabled){background:var(--accent-dark)}.primary:disabled{background:#a2bcb1;border-color:#a2bcb1;opacity:1;color:#fff}
+    .record-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:15px;font-size:12px;color:var(--muted)}.record-nav button{border:0;background:transparent;min-height:42px;color:var(--ink);font-size:12px;padding:8px 10px}.empty{padding:50px 20px 55px;text-align:center}.empty svg{width:40px;height:40px;margin:0 auto 16px;color:#7c9b8e}.empty h2{font-size:20px}.empty p{color:var(--muted);font-size:13px;line-height:1.8}
+    footer{display:flex;align-items:center;justify-content:center;gap:7px;color:#7b8a87;font-size:11px;margin-top:26px;line-height:1.8;text-align:center}footer svg{height:13px;width:13px}.dialog{border:1px solid var(--line);border-radius:20px;padding:28px;width:min(440px,calc(100vw - 32px));color:var(--ink);box-shadow:0 24px 80px #102c3933}.dialog::backdrop{background:#102b3b66;backdrop-filter:blur(3px)}.dialog h2{font-size:21px;margin:0 0 12px}.dialog p{font-size:14px;line-height:1.8;color:var(--muted);white-space:pre-line;word-break:break-word}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}.dialog-actions .icon-button{min-height:48px}
+    @media(max-width:760px){.wrap{padding:20px 16px 24px}.topbar{margin-bottom:21px}.brandmark{width:38px;height:38px;border-radius:11px}.brand{gap:9px}.brand small{font-size:8px;letter-spacing:1.4px}h1{font-size:20px}.mode{font-size:10px;padding:6px 8px}.top-actions{gap:8px}.refresh-label{display:none}.icon-button{padding:0 10px}.overview{padding:23px 21px;grid-template-columns:1fr 1fr;gap:21px;border-radius:18px;margin-bottom:18px}.metric:first-child{grid-column:1/-1}.metric:nth-child(2){border:0;padding:0}.metric:nth-child(3){padding-left:24px}.metric-value{font-size:32px}.metric-count{font-size:25px}.metric-label{margin-bottom:7px}.progress{max-width:none;margin-top:10px}.submetric{margin-top:7px}.workspace{display:block}.selector{padding:19px;margin-bottom:17px}.selector .section-label,.selector-foot,.property-list{display:none}.picker{display:block}.filters{margin:15px 0}.detail{padding:22px 20px 0}.detail h2{font-size:22px}.detail-head{margin-bottom:22px}.fields{grid-template-columns:1fr;gap:18px}.fields .amount-field{order:-1}.amount-wrap input{font-size:26px}.paid-control{margin:21px 0}.savebar{margin:0 -20px;padding:16px 20px;position:sticky;bottom:0;z-index:2;box-shadow:0 -5px 18px #1b372807;gap:10px}.save-note{font-size:11px}.savebar .primary{padding:12px 20px;min-height:51px}.detail{overflow:visible}.record-nav{margin-top:10px}.dialog{padding:24px}.dialog-actions button{flex:1}.mode:not(.test){display:none}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand"><span class="brandmark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V5l8-3v19M12 8l8 3v10M2 21h20M7.5 7v1m0 4v1m0 4v1M16 12v1m0 4v1"/></svg></span><div><small>YOUR RENT WORKSPACE</small><h1>每月收租管理</h1></div></div>
+    <div class="top-actions"><span class="mode" id="mode">私人工作台</span><button class="icon-button" id="reload" type="button" aria-label="重新讀取資料" title="重新讀取資料"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 19.4 9M4.6 15a8 8 0 0 0 13.3 2.9"/></svg><span class="refresh-label">重新讀取</span></button></div>
+  </header>
+  <section class="overview" aria-label="本月收款概況">
+    <div class="metric"><div class="metric-label" id="overview-label">本月實收合計</div><div class="metric-value"><span class="currency">NT$</span><span id="total">—</span></div><div class="submetric">包含已登錄的部分收款</div></div>
+    <div class="metric"><div class="metric-label">已收款</div><div class="metric-count"><span id="paid-count">—</span><small>筆</small></div><div class="progress" role="progressbar" aria-label="收款完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress"><span id="progress-fill"></span></div></div>
+    <div class="metric"><div class="metric-label">待收款</div><div class="metric-count"><span id="unpaid-count">—</span><small>筆</small></div><div class="submetric" id="summary">正在讀取收款概況</div></div>
+  </section>
+  <main class="workspace">
+    <aside class="panel selector" aria-label="月份與物件">
+      <p class="section-label">SELECT A RECORD</p><label class="field-label" for="month">收租月份</label><select id="month" disabled></select>
+      <div class="filters" role="group" aria-label="篩選收款狀態"><button type="button" class="filter" data-filter="all" aria-pressed="true">全部</button><button type="button" class="filter" data-filter="unpaid" aria-pressed="false">待收款</button><button type="button" class="filter" data-filter="paid" aria-pressed="false">已收款</button></div>
+      <div class="picker"><label class="field-label" for="item">收租物件／類型</label><select id="item" disabled></select></div>
+      <div class="property-list" id="property-list" aria-label="收租物件清單"></div>
+      <p class="selector-foot">先選擇月份與物件，再登錄收款。<br>儲存前會再次顯示確認資訊。</p>
+    </aside>
+    <div>
+      <section class="panel detail">
+        <div id="record-content" hidden>
+          <div class="detail-head"><div><p class="section-label">PAYMENT DETAILS</p><h2 id="record-name"></h2><div class="detail-meta" id="record-meta"></div></div><span id="record-badge" class="badge">待收款</span></div>
+          <form id="rent-form">
+            <div class="fields">
+              <div><label class="field-label" for="date">實際入帳日</label><input id="date" type="date"><div class="field-help">依款項實際入帳的日期填寫</div></div>
+              <div class="amount-field"><label class="field-label" for="amount">實收金額（元）</label><div class="amount-wrap"><span class="prefix" aria-hidden="true">NT$</span><input id="amount" type="number" min="0" max="999999999" step="0.01" inputmode="decimal" placeholder="0"></div><div class="field-help">可輸入部分收款，最多兩位小數</div></div>
+            </div>
+            <label class="paid-control"><input id="paid" type="checkbox"><span><strong id="paid-label">標記為已收款</strong><small>勾選時，請填妥金額及入帳日</small></span></label>
+            <label class="field-label" for="note">備註 <span class="optional">選填</span></label><textarea id="note" rows="2" maxlength="500" placeholder="例如：轉帳末五碼、分期或補款說明"></textarea><div class="note-meta"><span>僅儲存在您的私人試算表</span><span id="note-count">0 / 500</span></div>
+          </form>
+        </div>
+        <div class="empty" id="empty"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 3h10l3 3v15H4V3h3M8 9h8M8 13h8M8 17h5"/></svg><h2 id="empty-title">正在準備工作台</h2><p id="empty-message">讀取完成後，即可選擇物件登錄收款。</p></div>
+        <div class="status" id="status" data-kind="busy" role="status" aria-live="polite">正在讀取月份…</div>
+        <div class="savebar"><div class="save-note"><strong id="edit-state">尚未選擇物件</strong><span>確認後才會更新收款資料</span></div><button class="primary" id="save" type="submit" form="rent-form" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span id="save-label">儲存收款</span></button></div>
+      </section>
+      <nav class="record-nav" aria-label="物件切換"><button id="prev" type="button" disabled>← 上一筆</button><span id="position">—</span><button id="next" type="button" disabled>下一筆 →</button></nav>
+    </div>
+  </main>
+  <footer><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg><span>私人收租工作台 · 僅供本人使用</span></footer>
+</div>
+<dialog id="confirm-dialog" class="dialog" aria-labelledby="confirm-title" aria-describedby="confirm-body"><h2 id="confirm-title"></h2><p id="confirm-body"></p><div class="dialog-actions"><button class="icon-button" id="confirm-cancel" type="button">返回修改</button><button class="primary" id="confirm-ok" type="button">確認儲存</button></div></dialog>
+<script>
+const $=id=>document.getElementById(id),filterButtons=[...document.querySelectorAll('[data-filter]')];
+let rows=[],busy=true,loadedMonth='',request=0,selectedRow=null,filter='all',pendingAction=null;
+const money=value=>Number(value||0).toLocaleString('zh-TW',{maximumFractionDigits:2});
+const current=()=>rows.find(r=>r.row===selectedRow);
+const visibleRows=()=>rows.filter(r=>filter==='all'||(filter==='paid'?r.paid:!r.paid));
+function setStatus(text,kind='neutral'){$('status').textContent=text;$('status').dataset.kind=kind}
+function dirty(){const r=current();return !!r&&($('date').value!==(r.date||'')||$('amount').value!==String(r.amount??'')||$('paid').checked!==!!r.paid||$('note').value!==(r.note||''))}
+function updateControls(){
+  const r=current(),list=visibleRows(),index=list.findIndex(x=>x.row===selectedRow);
+  ['month','reload'].forEach(id=>$(id).disabled=busy);
+  ['item','date','amount','paid','note'].forEach(id=>$(id).disabled=busy||!r);
+  filterButtons.forEach(b=>b.disabled=busy);
+  document.querySelectorAll('.property-button').forEach(b=>b.disabled=busy);
+  $('save').disabled=busy||!r||!dirty();
+  $('prev').disabled=busy||index<=0;$('next').disabled=busy||index<0||index>=list.length-1;
+  $('position').textContent=index>=0?(index+1)+' / '+list.length+' 筆':'沒有可選物件';
+  $('edit-state').textContent=busy?'正在處理…':!r?'尚未選擇物件':dirty()?'有尚未儲存的變更':'資料已同步';
+  $('save-label').textContent=busy?'處理中…':'儲存收款';
+  $('note-count').textContent=$('note').value.length+' / 500';
+  $('paid-label').textContent=$('paid').checked?'此筆標記為已收款':'標記為已收款';
 }
-function fail(e){rows=[];loadedMonth='';$('item').replaceChildren();render();controls(false);status('操作失敗：'+(e&&e.message||e)+'。請重新讀取。')}
-function loadMonths(){
-  controls(true);
+function setBusy(value){busy=value;updateControls()}
+function showConfirm(title,body,label,action){
+  pendingAction=action;$('confirm-title').textContent=title;$('confirm-body').textContent=body;$('confirm-ok').textContent=label;
+  $('confirm-dialog').showModal();$('confirm-cancel').focus();
+}
+function changeRecord(action){
+  if(!dirty()){action();return}
+  showConfirm('尚有未儲存的變更','切換後，這筆尚未儲存的輸入將不會保留。','放棄變更並切換',action);
+}
+$('confirm-cancel').addEventListener('click',()=>{$('confirm-dialog').close();pendingAction=null});
+$('confirm-dialog').addEventListener('cancel',()=>{pendingAction=null});
+$('confirm-ok').addEventListener('click',()=>{const action=pendingAction;pendingAction=null;$('confirm-dialog').close();if(action)action()});
+function renderMetrics(){
+  const count=rows.filter(r=>r.paid).length,percentage=rows.length?Math.round(count/rows.length*100):0;
+  $('total').textContent=loadedMonth?money(rows.reduce((n,r)=>n+(Number(r.amount)||0),0)):'—';
+  $('paid-count').textContent=loadedMonth?count:'—';$('unpaid-count').textContent=loadedMonth?rows.length-count:'—';
+  $('overview-label').textContent=loadedMonth?loadedMonth.replace('-',' 年 ')+' 月實收合計':'本月實收合計';
+  $('summary').textContent=loadedMonth?'共 '+rows.length+' 筆收租紀錄':'正在讀取收款概況';
+  $('progress').setAttribute('aria-valuenow',String(percentage));$('progress-fill').style.width=percentage+'%';
+}
+function renderList(){
+  const list=visibleRows(),container=$('property-list'),picker=$('item');container.replaceChildren();picker.replaceChildren();
+  filterButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===filter)));
+  list.forEach(r=>{
+    const option=document.createElement('option');option.value=String(r.row);option.textContent=r.property+'／'+r.type;picker.append(option);
+    const button=document.createElement('button');button.type='button';button.className='property-button';button.setAttribute('aria-pressed',String(r.row===selectedRow));button.setAttribute('aria-label',r.property+'／'+r.type+'，'+(r.paid?'已收款':'待收款'));
+    const text=document.createElement('span'),name=document.createElement('span'),type=document.createElement('span'),badge=document.createElement('span'),dot=document.createElement('span');
+    name.className='property-name';name.textContent=r.property;type.className='property-type';type.textContent=r.type+' · '+(r.amount!==''?'NT$ '+money(r.amount):'尚未登錄金額');text.append(name,type);
+    badge.className='tiny-status';dot.className='dot'+(r.paid?' paid':'');badge.append(dot,document.createTextNode(r.paid?'已收':'待收'));button.append(text,badge);
+    button.addEventListener('click',()=>{if(busy||selectedRow===r.row)return;changeRecord(()=>selectRecord(r.row))});container.append(button);
+  });
+  if(!list.length){const text=document.createElement('p');text.className='list-empty';text.textContent=busy?'正在讀取物件…':'沒有符合狀態的物件';container.append(text);const o=document.createElement('option');o.textContent='沒有符合狀態的物件';o.value='';picker.append(o)}
+  picker.value=selectedRow===null?'':String(selectedRow);
+}
+function renderForm(){
+  const r=current();$('record-content').hidden=!r;$('empty').hidden=!!r;
+  $('date').value=r?r.date||'':'';$('amount').value=r?r.amount??'':'';$('paid').checked=!!r?.paid;$('note').value=r?r.note||'':'';
+  if(r){$('record-name').textContent=r.property;$('record-meta').textContent=loadedMonth+' · '+r.type;$('record-badge').textContent=r.paid?'已收款':'待收款';$('record-badge').className='badge'+(r.paid?' paid':'')}
+  else{$('empty-title').textContent=busy?'正在準備工作台':'目前沒有符合的物件';$('empty-message').textContent=busy?'讀取完成後，即可選擇物件登錄收款。':'您可以切換收款狀態或月份，查看其他紀錄。'}
+  updateControls();
+}
+function selectRecord(row){selectedRow=row;renderList();renderForm();setStatus('請確認物件、金額與入帳日，再儲存收款。')}
+function fail(error){
+  rows=[];loadedMonth='';selectedRow=null;busy=false;renderList();renderForm();renderMetrics();
+  $('empty-title').textContent='暫時無法讀取資料';$('empty-message').textContent='您的修改尚未確認，請重新讀取資料後核對。';
+  setStatus('操作失敗：'+(error?.message||error)+'。請按右上角重新讀取。','error');
+}
+function loadMonths(preferred){
+  setBusy(true);setStatus('正在讀取月份…','busy');
   google.script.run.withSuccessHandler(ctx=>{
-    $('mode').textContent=ctx.testMode?'測試副本｜所有儲存僅供驗收':'正式收租工作台';
-    $('month').replaceChildren();
-    ctx.months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;$('month').append(o)});
+    $('mode').textContent=ctx.testMode?'測試副本':'正式收租工作台';$('mode').classList.toggle('test',ctx.testMode);
+    $('month').replaceChildren();ctx.months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m.replace('-',' 年 ')+' 月';$('month').append(o)});
     if(!ctx.months.length){fail('找不到月份分頁');return}
-    $('month').value=ctx.months[ctx.months.length-1];loadRows();
+    $('month').value=ctx.months.includes(preferred)?preferred:ctx.months[ctx.months.length-1];loadRows();
   }).withFailureHandler(fail).getContext();
 }
-function loadRows(message){
-  const month=$('month').value,seq=++request;
-  const selectedRow=loadedMonth===month?rows[Number($('item').value)]?.row:null;
-  rows=[];loadedMonth='';controls(true);render();status('讀取收款資料…');
+function loadRows(message,preferred){
+  const month=$('month').value,seq=++request,keep=preferred??(loadedMonth===month?selectedRow:null);
+  setBusy(true);rows=[];loadedMonth='';selectedRow=null;renderList();renderForm();renderMetrics();setStatus('正在讀取收款資料…','busy');
   google.script.run.withSuccessHandler(data=>{
     if(seq!==request||month!==$('month').value)return;
-    rows=data;loadedMonth=month;$('item').replaceChildren();
-    rows.forEach((r,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=r.property+'／'+r.type;$('item').append(o)});
-    const selectedIndex=rows.findIndex(r=>r.row===selectedRow);
-    if(selectedIndex>=0)$('item').value=String(selectedIndex);
-    controls(false);render();status(message||(rows.length?'資料已載入，請選擇物件。':'這個月份沒有收租資料。'));
+    rows=data;loadedMonth=month;const list=visibleRows();selectedRow=list.some(r=>r.row===keep)?keep:list[0]?.row??null;
+    busy=false;renderList();renderForm();renderMetrics();setStatus(message||'資料已同步，請選擇物件登錄收款。',message?'success':'neutral');
   }).withFailureHandler(e=>{if(seq===request)fail(e)}).getRows(month);
 }
-function render(){
-  const r=rows[Number($('item').value)];
-  $('save').disabled=!r||busy;
-  $('date').value=r?r.date||'':'';
-  $('amount').value=r?r.amount??'':'';
-  $('paid').checked=r?!!r.paid:false;
-  $('note').value=r?r.note||'':'';
-  const paid=rows.filter(x=>x.paid).length,total=rows.reduce((n,x)=>n+(Number(x.amount)||0),0);
-  $('summary').textContent=rows.length?'已收 '+paid+' / '+rows.length+' 筆｜實收 '+total.toLocaleString('zh-TW')+' 元':'本月無資料';
-}
-$('month').addEventListener('change',()=>loadRows());
-$('item').addEventListener('change',render);
-$('reload').addEventListener('click',()=>{if(!busy)loadMonths()});
-$('save').addEventListener('click',()=>{
-  const r=rows[Number($('item').value)];
-  if(!r||busy||loadedMonth!==$('month').value)return;
-  if(!$('amount').reportValidity()||!$('date').reportValidity())return;
+$('month').addEventListener('change',()=>{const next=$('month').value;if(dirty()){$('month').value=loadedMonth;changeRecord(()=>{$('month').value=next;filter='all';loadRows()})}else{filter='all';loadRows()}});
+$('item').addEventListener('change',()=>{const next=Number($('item').value);$('item').value=String(selectedRow);changeRecord(()=>selectRecord(next))});
+filterButtons.forEach(b=>b.addEventListener('click',()=>{if(busy||b.dataset.filter===filter)return;changeRecord(()=>{filter=b.dataset.filter;const list=visibleRows();if(!list.some(r=>r.row===selectedRow))selectedRow=list[0]?.row??null;renderList();renderForm();setStatus(list.length?'已篩選收款狀態。':'這個月份沒有符合狀態的物件。')})}));
+['prev','next'].forEach(id=>$(id).addEventListener('click',()=>{const list=visibleRows(),i=list.findIndex(r=>r.row===selectedRow),next=list[i+(id==='prev'?-1:1)];if(!busy&&next)changeRecord(()=>selectRecord(next.row))}));
+$('reload').addEventListener('click',()=>{if(!busy)changeRecord(()=>loadMonths(loadedMonth))});
+['date','amount','paid','note'].forEach(id=>$(id).addEventListener('input',updateControls));
+$('rent-form').addEventListener('submit',event=>{
+  event.preventDefault();const r=current();if(!r||busy||!dirty()||loadedMonth!==$('month').value)return;
+  if(!$('rent-form').reportValidity())return;
   const p={month:loadedMonth,row:r.row,property:r.property,type:r.type,version:r.version,date:$('date').value,amount:$('amount').value,paid:$('paid').checked,note:$('note').value};
-  if(p.paid&&(!p.date||!(Number(p.amount)>0))){status('已收款必須填寫金額及入帳日');return}
-  if(!confirm('確認儲存 '+p.month+' '+p.property+'／'+p.type+' 的收款資料？'))return;
-  controls(true);status('正在儲存…');
-  google.script.run.withSuccessHandler(()=>loadRows('儲存成功，已重新讀取 Google Sheets。')).withFailureHandler(fail).saveRent(p);
+  if(p.paid&&(!p.date||!(Number(p.amount)>0))){setStatus('已收款必須填寫金額及入帳日。','error');if(!p.date)$('date').focus();else $('amount').focus();return}
+  showConfirm('確認這筆收款',p.month+' · '+p.property+'／'+p.type+'\n實收金額：'+(p.amount===''?'未填寫':'NT$ '+money(p.amount))+'\n入帳日期：'+(p.date||'未填寫')+'\n收款狀態：'+(p.paid?'已收款':'待收款'),'確認儲存',()=>{
+    setBusy(true);setStatus('正在儲存收款資料，請稍候…','busy');
+    google.script.run.withSuccessHandler(()=>loadRows('儲存成功，收款資料已同步。',p.row)).withFailureHandler(error=>{
+      setBusy(false);setStatus('儲存未完成：'+(error?.message||error)+'。已保留您的輸入，請核對後再試；若資料已被更新，請重新讀取。','error');
+    }).saveRent(p);
+  });
 });
-loadMonths();</script></body></html>
+loadMonths();
+</script>
+</body>
+</html>
