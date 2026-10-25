@@ -162,11 +162,22 @@ function cityResidents_(store) {
     throw Error('島民資料無法讀取，請稍後再試');
   }).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
 }
+// Optional named islands live in private configuration, separate from accounting rows.
+function cityExtraHomes_() {
+  const text=PropertiesService.getScriptProperties().getProperty('CITY_EXTRA_ISLANDS');if(!text)return [];
+  let names;try{names=JSON.parse(text)}catch(e){throw Error('CITY_EXTRA_ISLANDS 請使用名稱陣列格式')}
+  if(!Array.isArray(names)||names.length>100||names.some(n=>typeof n!=='string'||!n.trim()||Array.from(n.trim()).length>120||/[\u0000-\u001f\u007f]/.test(n)))throw Error('額外島嶼名稱設定無效');
+  return [...new Set(names.map(n=>n.trim()))];
+}
+function cityIslandList_(properties,extra) {
+  const islands=properties.map(p=>Object.assign({},p,{hasRecords:true})),known=new Set(islands.map(p=>p.name));
+  extra.forEach(name=>{if(!known.has(name)){known.add(name);islands.push({name:name,hasRecords:false})}});return islands;
+}
 function citySnapshot_(ss,month,today,store) {
   const records=dashboardRows_(ss,month,today),groups=new Map();
   records.forEach(r=>{if(!groups.has(r.property))groups.set(r.property,[]);groups.get(r.property).push(r)});
   const properties=Array.from(groups,([name,list])=>Object.assign({name:name,firstRow:list[0].row},summarize_(list))).sort((a,b)=>a.name.localeCompare(b.name));
-  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,records:records,residents:cityResidents_(store)};
+  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,islands:cityIslandList_(properties,cityExtraHomes_()),records:records,residents:cityResidents_(store)};
 }
 function getCitySnapshot(month) { const ss=book_();return citySnapshot_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'),cityStore_()); }
 function createResident_(store,p,homes) {
@@ -175,7 +186,7 @@ function createResident_(store,p,homes) {
   if(typeof p.name!=='string'||Array.from(p.name.trim()).length<1||Array.from(p.name.trim()).length>20||/[\u0000-\u001f\u007f]/.test(p.name))throw Error('名字請填 1 至 20 個字');
   if(!CITY_KINDS_.includes(p.kind)||!CITY_COLORS_.includes(p.color))throw Error('請選擇支援的精靈外型');
   if(typeof p.home!=='string'||(p.home!==''&&!homes.includes(p.home)))throw Error('請選擇有效的居住島嶼');
-  if(Array.from(p.home).length>120)throw Error('物件名稱過長，請選中央廣場');
+  if(Array.from(p.home).length>120)throw Error('物件名稱過長，請選中央戰情室');
   const key=CITY_PREFIX_+id,old=store.getProperty(key);
   if(old){const r=JSON.parse(old);if(r.name===p.name.trim()&&r.kind===p.kind&&r.color===p.color&&r.home===p.home)return r;throw Error('新增請求已使用，請重新開啟邀請視窗')}
   if(cityResidents_(store).length>=24)throw Error('城市目前最多可入住 24 位精靈');
@@ -184,7 +195,7 @@ function createResident_(store,p,homes) {
 }
 function createCityResident(p) {
   const ss=book_(),month=p&&p.month;sheet_(ss,month);
-  const homes=dashboardRows_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd')).map(r=>r.property),lock=LockService.getScriptLock();lock.waitLock(20000);
+  const homes=dashboardRows_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd')).map(r=>r.property).concat(cityExtraHomes_()),lock=LockService.getScriptLock();lock.waitLock(20000);
   try{return createResident_(cityStore_(),p,homes)}finally{lock.releaseLock()}
 }
 function careResident_(store,p) {
@@ -196,4 +207,5 @@ function careResident_(store,p) {
   store.setProperty(key,JSON.stringify(r));return r;
 }
 function careCityResident(p) { const lock=LockService.getScriptLock();lock.waitLock(20000);try{return careResident_(cityStore_(),p)}finally{lock.releaseLock()} }
+
 
