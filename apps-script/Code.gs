@@ -24,7 +24,7 @@ function version_(values,formulas) {
 function getMonths() { return months_(book_()); }
 function getContext() {
   const ss=book_();
-  return {months:months_(ss),testMode:PropertiesService.getScriptProperties().getProperty('APP_MODE')!=='LIVE'};
+  return {months:months_(ss),today:Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'),testMode:PropertiesService.getScriptProperties().getProperty('APP_MODE')!=='LIVE'};
 }
 function getRows(month) {
   const ss=book_(),sh=sheet_(ss,month),c=cols_(sh),range=sh.getDataRange(),v=range.getValues(),f=range.getFormulas(),tz=ss.getSpreadsheetTimeZone();
@@ -73,4 +73,79 @@ function saveRent(p) {
 }
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index').setTitle('每月收租管理').addMetaTag('viewport','width=device-width, initial-scale=1');
+}
+
+// Dashboard reads only. No writes, cross-user cache, or client-supplied file IDs.
+function number_(value,blank) {
+  if(value===''||value===null||value===undefined) return blank;
+  if(typeof value!=='number'&&typeof value!=='string') return null;
+  const text=String(value).trim();
+  if(!/^\d+(\.\d+)?$/.test(text)) return null;
+  const n=Number(text);return Number.isFinite(n)?Math.round(n*100)/100:null;
+}
+function round_(n) { return Math.round((n+Number.EPSILON)*100)/100; }
+function monthOffset_(month,offset) {
+  const parts=month.split('-').map(Number),date=new Date(Date.UTC(parts[0],parts[1]-1+offset,1));
+  return date.getUTCFullYear()+'-'+String(date.getUTCMonth()+1).padStart(2,'0');
+}
+function dueDate_(month,value) {
+  if(typeof value!=='number'&&typeof value!=='string') return '';
+  const text=String(value).trim();if(!/^\d{1,2}$/.test(text)) return '';
+  const day=Number(text);if(day<1||day>31) return '';
+  const p=month.split('-').map(Number),last=new Date(Date.UTC(p[0],p[1],0)).getUTCDate();
+  return month+'-'+String(Math.min(day,last)).padStart(2,'0');
+}
+function dashboardRows_(ss,month,today) {
+  const sh=sheet_(ss,month),required=cols_(sh),v=sh.getDataRange().getValues(),h=v[0].map(x=>String(x).trim());
+  function index(name){const found=h.map((x,i)=>x===name?i:-1).filter(i=>i>=0);if(found.length>1)throw Error(month+' 欄位重複：'+name);return found.length?found[0]:-1}
+  const expectedColumn=index('本月應收'),fallback=index('應收金額'),dueColumn=index('每月應收日'),loanColumn=index('貸款金額');
+  const source=expectedColumn>=0?expectedColumn:fallback,todayMs=Date.parse(today+'T00:00:00Z');
+  return v.slice(1).map((r,i)=>{
+    const property=String(r[required['物件名稱']-1]||'').trim();if(!property)return null;
+    const actual=number_(r[required['實收金額']-1],0),expected=source>=0?number_(r[source],null):null,loan=loanColumn>=0?number_(r[loanColumn],0):null;
+    const paid=r[required['是否已收']-1]===true,date=r[required['實際入帳日']-1],due=dueColumn>=0?dueDate_(month,r[dueColumn]):'';
+    const remaining=expected===null||actual===null?null:round_(Math.max(expected-actual,0));
+    const days=due?Math.floor((todayMs-Date.parse(due+'T00:00:00Z'))/86400000):null,issues=[];
+    if(expected===null)issues.push('應收金額待確認');if(actual===null)issues.push('實收金額格式待確認');
+    if(remaining>0&&!due)issues.push('應收日待確認');
+    if(paid&&(actual===null||actual<=0||!date||remaining>0))issues.push('已勾選但金額或日期待核對');
+    if(!paid&&expected>0&&actual!==null&&actual>=expected)issues.push('金額已到位，尚未勾選');
+    if(actual!==null&&expected!==null&&actual>expected)issues.push('實收超過應收，請核對');
+    if(loanColumn>=0&&loan===null)issues.push('貸款金額格式待確認');
+    return {row:i+2,property:property,type:String(r[required['類型']-1]||''),actual:actual,expected:expected,remaining:remaining,loan:loan,hasLoan:loanColumn>=0,paid:paid,due:due,
+      overdueDays:remaining>0&&days>0?days:0,dueSoon:remaining>0&&days!==null&&days<=0&&days>=-7,issues:issues};
+  }).filter(Boolean);
+}
+function summarize_(records) {
+  const s={count:records.length,expected:0,actual:0,remaining:0,allocated:0,expectedMissing:0,actualMissing:0,remainingMissing:0,paidCount:0,overdueCount:0,overdueAmount:0,dueSoonCount:0,reviewCount:0,loan:0,loanMissing:0,hasLoan:records.length>0&&records.every(r=>r.hasLoan)};
+  records.forEach(r=>{
+    if(r.expected===null)s.expectedMissing++;else s.expected+=r.expected;
+    if(r.actual===null)s.actualMissing++;else s.actual+=r.actual;
+    if(r.remaining===null)s.remainingMissing++;else s.remaining+=r.remaining;
+    if(r.expected!==null&&r.actual!==null)s.allocated+=Math.min(r.expected,r.actual);
+    if(r.paid)s.paidCount++;if(r.overdueDays){s.overdueCount++;s.overdueAmount+=r.remaining}
+    if(r.dueSoon)s.dueSoonCount++;if(r.issues.length)s.reviewCount++;
+    if(r.loan===null)s.loanMissing++;else s.loan+=r.loan;
+  });
+  ['expected','actual','remaining','allocated','overdueAmount','loan'].forEach(k=>s[k]=round_(s[k]));
+  s.rate=s.expected>0&&!s.expectedMissing&&!s.actualMissing?Math.round(s.allocated/s.expected*1000)/10:null;
+  s.afterLoan=s.hasLoan&&!s.loanMissing&&!s.actualMissing?round_(s.actual-s.loan):null;
+  return s;
+}
+function dashboard_(ss,month,today) {
+  sheet_(ss,month);
+  const available=months_(ss),records=dashboardRows_(ss,month,today),summary=summarize_(records),warnings=[];
+  const trend=Array.from({length:12},(_,i)=>monthOffset_(month,i-11)).map(m=>{
+    if(!available.includes(m))return {month:m,available:false};
+    try{return Object.assign({month:m,available:true},m===month?summary:summarize_(dashboardRows_(ss,m,today)))}
+    catch(e){warnings.push(m+' 無法彙整，請檢查欄位');return {month:m,available:false,error:true}}
+  });
+  const grouped=new Map();records.forEach(r=>{if(!grouped.has(r.property))grouped.set(r.property,[]);grouped.get(r.property).push(r)});
+  const properties=Array.from(grouped,([name,list])=>Object.assign({name:name,firstRow:list[0].row},summarize_(list))).sort((a,b)=>b.remaining-a.remaining||a.name.localeCompare(b.name));
+  const prior=trend[trend.length-2],comparable=prior.available&&!prior.actualMissing&&!summary.actualMissing;
+  const comparison=comparable?{month:prior.month,delta:round_(summary.actual-prior.actual),percent:prior.actual>0?Math.round((summary.actual-prior.actual)/prior.actual*1000)/10:null}:null;
+  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summary,trend:trend,properties:properties,records:records,comparison:comparison,warnings:warnings};
+}
+function getDashboard(month) {
+  const ss=book_();return dashboard_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'));
 }
