@@ -169,11 +169,18 @@ function cityExtraHomes_() {
   if(!Array.isArray(names)||names.length>100||names.some(n=>typeof n!=='string'||!n.trim()||Array.from(n.trim()).length>120||/[\u0000-\u001f\u007f]/.test(n)))throw Error('額外島嶼名稱設定無效');
   return [...new Set(names.map(n=>n.trim()))];
 }
+// Names and per-island shapes stay in the owner's private configuration.
+function cityProfiles_() {
+  const text=PropertiesService.getScriptProperties().getProperty('CITY_ISLAND_PROFILES');if(!text)return {};
+  let profiles;try{profiles=JSON.parse(text)}catch(e){throw Error('CITY_ISLAND_PROFILES 請使用物件格式')}
+  if(!profiles||typeof profiles!=='object'||Array.isArray(profiles)||Object.keys(profiles).length>100)throw Error('島嶼地塊設定無效');
+  Object.entries(profiles).forEach(([name,p])=>{if(!name.trim()||name.length>120||!p||!Number.isInteger(p.tiles)||p.tiles<5||p.tiles>12||p.displayName!==undefined&&(typeof p.displayName!=='string'||!p.displayName.trim()||p.displayName.length>120||/[\u0000-\u001f\u007f]/.test(p.displayName)))throw Error('島嶼地塊數須為 5 至 12，名稱不可空白')});return profiles;
+}
 function cityIslandList_(properties,extra) {
   const islands=properties.map(p=>Object.assign({},p,{hasRecords:true})),known=new Set(islands.map(p=>p.name));
   extra.forEach(name=>{if(!known.has(name)){known.add(name);islands.push({name:name,hasRecords:false})}});
   const centralOnly=(PropertiesService.getScriptProperties().getProperty('CITY_CENTRAL_ONLY_ISLAND')||'').trim();
-  islands.forEach(island=>{island.centralOnly=island.name===centralOnly});return islands;
+  const profiles=cityProfiles_();islands.forEach(island=>{const profile=Object.prototype.hasOwnProperty.call(profiles,island.name)?profiles[island.name]:{};island.centralOnly=island.name===centralOnly;island.tileCount=profile.tiles||7;island.displayName=profile.displayName?.trim()||island.name});return islands;
 }
 function citySnapshot_(ss,month,today,store) {
   const records=dashboardRows_(ss,month,today),groups=new Map();
@@ -209,3 +216,5 @@ function careResident_(store,p) {
   store.setProperty(key,JSON.stringify(r));return r;
 }
 function careCityResident(p) { const lock=LockService.getScriptLock();lock.waitLock(20000);try{return careResident_(cityStore_(),p)}finally{lock.releaseLock()} }
+
+
