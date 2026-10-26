@@ -186,7 +186,7 @@ function citySnapshot_(ss,month,today,store) {
   const records=dashboardRows_(ss,month,today),groups=new Map();
   records.forEach(r=>{if(!groups.has(r.property))groups.set(r.property,[]);groups.get(r.property).push(r)});
   const properties=Array.from(groups,([name,list])=>Object.assign({name:name,firstRow:list[0].row},summarize_(list))).sort((a,b)=>a.name.localeCompare(b.name));
-  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,islands:cityIslandList_(properties,cityExtraHomes_()),records:records,residents:cityResidents_(store),buildings:cityBuildings_(store),characterNames:cityCharacterNames_(store)};
+  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,islands:cityIslandList_(properties,cityExtraHomes_()),records:records,residents:cityResidents_(store),buildings:cityBuildings_(store),characterNames:cityCharacterNames_(store),islandInfo:cityIslandInfo_(store)};
 }
 function getCitySnapshot(month) { const ss=book_();return citySnapshot_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'),cityStore_()); }
 function createResident_(store,p,homes) {
@@ -272,5 +272,46 @@ function saveCityCharacterName(p){
     if(old?.lastOperationId===operationId){if(old.name!==name)throw Error('改名請求已使用，請重新開啟改名視窗');return cityNamePublic_(old)}
     if((old?.version||0)!==p.version)throw Error('這個角色的名字已被更新。請關閉視窗並按「立即同步」，再重新改名');
     const saved={id,name,version:p.version+1,lastOperationId:operationId};store.setProperty(key,JSON.stringify(saved));return cityNamePublic_(saved);
+  }finally{lock.releaseLock()}
+}
+
+
+// Addresses and document references stay in private User Properties, never in public source or accounting cells.
+const CITY_INFO_PREFIX_='RENT_CITY_ISLAND_INFO_V1_';
+const CITY_DOC_CATEGORIES_=['insurance','parking','housing','other'];
+function cityInfoText_(value,max,multiline=false){return typeof value==='string'&&Array.from(value).length<=max&&!(multiline?/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/:/[\u0000-\u001f\u007f]/).test(value)}
+function cityDocumentUrl_(value){if(typeof value!=='string'||value.length>500)return null;const m=value.match(/^https:\/\/(?:drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,200})\/(?:view|edit)|docs\.google\.com\/document\/d\/([A-Za-z0-9_-]{10,200})\/(?:view|edit))(?:\?([A-Za-z0-9_=%&.~-]*))?$/);if(!m)return null;const id=m[1]||m[2],key=(m[3]||'').match(/(?:^|&)resourcekey=([A-Za-z0-9_-]{1,200})(?:&|$)/);return {id,url:'https://drive.google.com/file/d/'+id+'/view'+(key?'?resourcekey='+key[1]:''),download:'https://drive.google.com/uc?export=download&id='+id+(key?'&resourcekey='+key[1]:'')}}
+function cityInfoKey_(home){return CITY_INFO_PREFIX_+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,home))}
+function cityInfoEmpty_(home){return {home,address:'',notes:'',documents:[],version:0}}
+function cityInfoDocValid_(d){return d&&typeof d.id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(d.id)&&cityInfoText_(d.title,80)&&!!d.title.trim()&&CITY_DOC_CATEGORIES_.includes(d.category)&&['pdf','docx'].includes(d.format)&&!!cityDocumentUrl_(d.url)&&cityInfoText_(d.note,160,true)&&typeof d.removed==='boolean'}
+function cityInfoValid_(r){return r&&cityInfoText_(r.home,120)&&!!r.home&&cityInfoText_(r.address,200)&&cityInfoText_(r.notes,500,true)&&Array.isArray(r.documents)&&r.documents.length<=24&&r.documents.every(cityInfoDocValid_)&&new Set(r.documents.map(d=>d.id)).size===r.documents.length&&new Set(r.documents.map(d=>cityDocumentUrl_(d.url).id)).size===r.documents.length&&r.documents.filter(d=>!d.removed).length<=12&&Number.isSafeInteger(r.version)&&r.version>0}
+function cityInfoPublic_(r){return {home:r.home,address:r.address,notes:r.notes,documents:r.documents.map(d=>({id:d.id,title:d.title,category:d.category,format:d.format,url:d.url,note:d.note,removed:d.removed})),version:r.version}}
+function cityIslandInfo_(store){const values=store.getProperties();return Object.keys(values).filter(k=>k.startsWith(CITY_INFO_PREFIX_)).map(k=>{let r;try{r=JSON.parse(values[k])}catch(e){}if(!cityInfoValid_(r)||k!==cityInfoKey_(r.home))throw Error('島嶼資料無法讀取，請重新同步');return cityInfoPublic_(r)}).sort((a,b)=>a.home.localeCompare(b.home))}
+function saveCityIslandInfo(p){
+  if(!p||typeof p!=='object'||!['profile','document','remove','restore'].includes(p.action))throw Error('島嶼資料操作無效');
+  const ss=book_();sheet_(ss,p.month);const homes=dashboardRows_(ss,p.month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd')).map(r=>r.property).concat(cityExtraHomes_());
+  if(!cityInfoText_(p.home,120)||!p.home||!homes.includes(p.home))throw Error('請選擇有效的物件島嶼');
+  if(!Number.isSafeInteger(p.version)||p.version<0||p.version>=Number.MAX_SAFE_INTEGER)throw Error('資料版本無效，請重新同步');
+  const operationId=cityId_(p.operationId);let fields;
+  if(p.action==='profile'){if(!cityInfoText_(p.address,200)||!cityInfoText_(p.notes,500,true))throw Error('地址限 200 字，備註限 500 字');fields={address:p.address.trim(),notes:p.notes.trim()}}
+  else if(p.action==='document'){const d=p.document||{},url=cityDocumentUrl_(d.url),id=cityId_(d.id);fields={id,title:typeof d.title==='string'?d.title.trim():d.title,category:d.category,format:d.format,url:url?.url,note:typeof d.note==='string'?d.note.trim():d.note,removed:false};if(!cityInfoDocValid_(fields))throw Error('請填寫文件名稱、類別、PDF／Word 格式及有效的 Google Drive 文件連結')}
+  else fields={id:cityId_(p.id)};
+  const signature=JSON.stringify({action:p.action,fields}),lock=LockService.getScriptLock();lock.waitLock(20000);
+  try{
+    const store=cityStore_(),key=cityInfoKey_(p.home),text=store.getProperty(key);let old;try{old=text?JSON.parse(text):null}catch(e){throw Error('島嶼資料無法讀取，請重新同步')}
+    if(old&&(!cityInfoValid_(old)||old.home!==p.home))throw Error('島嶼資料無法讀取，請重新同步');
+    if(old?.lastOperationId===operationId){if(old.lastSignature!==signature)throw Error('儲存請求已使用，請重新開啟島嶼資料');return cityInfoPublic_(old)}
+    if((old?.version||0)!==p.version)throw Error('這座島的資料已被更新。請關閉視窗並按「立即同步」，再重新編輯');
+    const next=old?cityInfoPublic_(old):cityInfoEmpty_(p.home);
+    if(p.action==='profile'){next.address=fields.address;next.notes=fields.notes}
+    else if(p.action==='document'){
+      const index=next.documents.findIndex(d=>d.id===fields.id),duplicate=next.documents.find(d=>d.id!==fields.id&&cityDocumentUrl_(d.url).id===cityDocumentUrl_(fields.url).id);
+      if(duplicate)throw Error(duplicate.removed?'此文件在「最近移除」中，請直接還原':'此文件已加入這座島');
+      if(index>=0&&next.documents[index].removed)throw Error('請先還原這份文件，再編輯');
+      if(index<0){if(next.documents.length>=24)throw Error('這座島已達 24 份文件紀錄上限');if(next.documents.filter(d=>!d.removed).length>=12)throw Error('每座島最多顯示 12 份文件');next.documents.push(fields)}else next.documents[index]=fields;
+    }else{const doc=next.documents.find(d=>d.id===fields.id);if(!doc)throw Error('找不到這份文件，請重新同步');if(p.action==='restore'&&doc.removed&&next.documents.filter(d=>!d.removed).length>=12)throw Error('每座島最多顯示 12 份文件');doc.removed=p.action==='remove'}
+    next.version=p.version+1;const saved={...next,lastOperationId:operationId,lastSignature:signature},encoded=JSON.stringify(saved);
+    if(Utilities.newBlob(encoded).getBytes().length>8000)throw Error('這座島資料已達儲存上限，請縮短備註或文件名稱');
+    store.setProperty(key,encoded);return cityInfoPublic_(next);
   }finally{lock.releaseLock()}
 }
