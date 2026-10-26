@@ -19,7 +19,7 @@ function sheet_(ss,month) {
   return ss.getSheetByName(month);
 }
 function version_(values,formulas) {
-  return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify([values,formulas])));
+  return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify([values,formulas]),Utilities.Charset.UTF_8));
 }
 function getMonths() { return months_(book_()); }
 function getContext() {
@@ -164,10 +164,10 @@ function cityResidents_(store) {
 }
 // Optional named islands live in private configuration, separate from accounting rows.
 function cityExtraHomes_() {
-  const text=PropertiesService.getScriptProperties().getProperty('CITY_EXTRA_ISLANDS');if(!text)return [];
+  const text=PropertiesService.getScriptProperties().getProperty('CITY_EXTRA_ISLANDS');if(!text)return cityCustomIslands_().map(r=>r.name);
   let names;try{names=JSON.parse(text)}catch(e){throw Error('CITY_EXTRA_ISLANDS 請使用名稱陣列格式')}
   if(!Array.isArray(names)||names.length>100||names.some(n=>typeof n!=='string'||!n.trim()||Array.from(n.trim()).length>120||/[\u0000-\u001f\u007f]/.test(n)))throw Error('額外島嶼名稱設定無效');
-  return [...new Set(names.map(n=>n.trim()))];
+  return [...new Set([...names.map(n=>n.trim()),...cityCustomIslands_().map(r=>r.name)])];
 }
 // Names and per-island shapes stay in the owner's private configuration.
 function cityProfiles_() {
@@ -180,7 +180,7 @@ function cityIslandList_(properties,extra) {
   const islands=properties.map(p=>Object.assign({},p,{hasRecords:true})),known=new Set(islands.map(p=>p.name));
   extra.forEach(name=>{if(!known.has(name)){known.add(name);islands.push({name:name,hasRecords:false})}});
   const centralOnly=(PropertiesService.getScriptProperties().getProperty('CITY_CENTRAL_ONLY_ISLAND')||'').trim();
-  const profiles=cityProfiles_();islands.forEach(island=>{const profile=Object.prototype.hasOwnProperty.call(profiles,island.name)?profiles[island.name]:{};island.centralOnly=island.name===centralOnly;island.tileCount=profile.tiles||7;island.displayName=profile.displayName?.trim()||island.name});return islands;
+  const profiles=cityProfiles_();cityCustomIslands_().forEach(r=>{if(!Object.prototype.hasOwnProperty.call(profiles,r.name))profiles[r.name]={tiles:r.tiles}});islands.forEach(island=>{const profile=Object.prototype.hasOwnProperty.call(profiles,island.name)?profiles[island.name]:{};island.centralOnly=island.name===centralOnly;island.tileCount=profile.tiles||7;island.displayName=profile.displayName?.trim()||island.name});return islands;
 }
 function citySnapshot_(ss,month,today,store) {
   const records=dashboardRows_(ss,month,today),groups=new Map();
@@ -221,13 +221,16 @@ function careCityResident(p) { const lock=LockService.getScriptLock();lock.waitL
 
 // Building configuration belongs to the private app, never to accounting cells.
 const CITY_BUILDING_PREFIX_='RENT_CITY_BUILDING_V1_';
+const CITY_BUILDING_UTF8_PREFIX_='RENT_CITY_BUILDING_V2_';
 const CITY_BUILDING_TYPES_=['bungalow','villa','townhouse','duplex','apartment','tower','courtyard','shopfront'];
 const CITY_BUILDING_STYLES_=['nordic','japanese','mediterranean','modern','brick','pastel'];
 const CITY_BUILDING_ROOMS_=['studio','one','two','three','four','open'];
-function cityBuildingKey_(home,plot){return CITY_BUILDING_PREFIX_+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify([home,plot])))}
+function cityBuildingKey_(home,plot){return CITY_BUILDING_UTF8_PREFIX_+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify([home,plot]),Utilities.Charset.UTF_8))}
+function cityBuildingLegacyKey_(home,plot){return CITY_BUILDING_PREFIX_+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify([home,plot])))}
 function cityBuildingValid_(r){return r&&typeof r.home==='string'&&Array.from(r.home).length<=120&&Number.isInteger(r.plot)&&(r.home===''?[13,15,17].includes(r.plot):r.plot===0)&&Number.isInteger(r.version)&&r.version>0&&(r.type===null||CITY_BUILDING_TYPES_.includes(r.type)&&CITY_BUILDING_STYLES_.includes(r.style)&&CITY_BUILDING_ROOMS_.includes(r.rooms)&&Number.isInteger(r.floors)&&r.floors>=1&&r.floors<=12&&Number.isInteger(r.rotation)&&r.rotation>=0&&r.rotation<=3)}
 function cityBuildingPublic_(r){return {home:r.home,plot:r.plot,type:r.type,style:r.style,rooms:r.rooms,floors:r.floors,rotation:r.rotation,version:r.version}}
-function cityBuildings_(store){const values=store.getProperties();return Object.keys(values).filter(k=>k.startsWith(CITY_BUILDING_PREFIX_)).map(k=>{let r;try{r=JSON.parse(values[k])}catch(e){}if(!cityBuildingValid_(r))throw Error('建築配置無法讀取，請重新同步');return cityBuildingPublic_(r)})}
+function cityBuildingRecords_(store){const values=store.getProperties(),records=new Map();for(const k of Object.keys(values).filter(k=>k.startsWith(CITY_BUILDING_PREFIX_)||k.startsWith(CITY_BUILDING_UTF8_PREFIX_))){let r;try{r=JSON.parse(values[k])}catch(e){}const modern=k.startsWith(CITY_BUILDING_UTF8_PREFIX_);if(!cityBuildingValid_(r)||k!==(modern?cityBuildingKey_(r.home,r.plot):cityBuildingLegacyKey_(r.home,r.plot)))throw Error('建築配置無法讀取，請重新同步');const id=JSON.stringify([r.home,r.plot]);if(modern||!records.has(id))records.set(id,r)}return Array.from(records.values())}
+function cityBuildings_(store){return cityBuildingRecords_(store).map(cityBuildingPublic_)}
 function saveCityBuilding(p){
   if(!p||typeof p!=='object'||!['place','remove'].includes(p.action))throw Error('建築操作無效');
   const ss=book_();sheet_(ss,p.month);
@@ -240,11 +243,11 @@ function saveCityBuilding(p){
   if(!cityBuildingValid_({...fields,version:1}))throw Error('請選擇支援的建築、風格、房型、樓層與朝向');
   const lock=LockService.getScriptLock();lock.waitLock(20000);
   try{
-    const store=cityStore_(),key=cityBuildingKey_(p.home,p.plot),text=store.getProperty(key),old=text?JSON.parse(text):null;
+    const store=cityStore_(),key=cityBuildingKey_(p.home,p.plot),records=cityBuildingRecords_(store),old=records.find(r=>r.home===p.home&&r.plot===p.plot);
     if(old&&!cityBuildingValid_(old))throw Error('建築配置無法讀取，請重新同步');
     if(old?.lastOperationId===operationId){if(JSON.stringify({...cityBuildingPublic_(old),version:0})!==JSON.stringify({...fields,version:0}))throw Error('儲存請求已使用，請重新開啟建築工坊');return cityBuildingPublic_(old)}
     if((old?.version||0)!==p.version)throw Error('此基地配置已被更新。請關閉工坊並按「立即同步」，再重新配置');
-    if(!old&&Object.keys(store.getProperties()).filter(k=>k.startsWith(CITY_BUILDING_PREFIX_)).length>=128)throw Error('建築配置已達容量上限');
+    if(!old&&records.length>=128)throw Error('建築配置已達容量上限');
     const saved={...fields,version:p.version+1,lastOperationId:operationId};
     store.setProperty(key,JSON.stringify(saved));return cityBuildingPublic_(saved);
   }finally{lock.releaseLock()}
@@ -278,27 +281,30 @@ function saveCityCharacterName(p){
 
 // Addresses and document references stay in private User Properties, never in public source or accounting cells.
 const CITY_INFO_PREFIX_='RENT_CITY_ISLAND_INFO_V1_';
+const CITY_INFO_UTF8_PREFIX_='RENT_CITY_ISLAND_INFO_V2_';
 const CITY_DOC_CATEGORIES_=['insurance','parking','housing','other'];
 function cityInfoText_(value,max,multiline=false){return typeof value==='string'&&Array.from(value).length<=max&&!(multiline?/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/:/[\u0000-\u001f\u007f]/).test(value)}
 function cityDocumentUrl_(value){if(typeof value!=='string'||value.length>500)return null;const m=value.match(/^https:\/\/(?:drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,200})\/(?:view|edit)|docs\.google\.com\/document\/d\/([A-Za-z0-9_-]{10,200})\/(?:view|edit))(?:\?([A-Za-z0-9_=%&.~-]*))?$/);if(!m)return null;const id=m[1]||m[2],key=(m[3]||'').match(/(?:^|&)resourcekey=([A-Za-z0-9_-]{1,200})(?:&|$)/);return {id,url:'https://drive.google.com/file/d/'+id+'/view'+(key?'?resourcekey='+key[1]:''),download:'https://drive.google.com/uc?export=download&id='+id+(key?'&resourcekey='+key[1]:'')}}
-function cityInfoKey_(home){return CITY_INFO_PREFIX_+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,home))}
+function cityInfoKey_(home){return CITY_INFO_UTF8_PREFIX_+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,home,Utilities.Charset.UTF_8))}
+function cityInfoLegacyKey_(home){return CITY_INFO_PREFIX_+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,home))}
 function cityInfoEmpty_(home){return {home,address:'',notes:'',documents:[],version:0}}
 function cityInfoDocValid_(d){return d&&typeof d.id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(d.id)&&cityInfoText_(d.title,80)&&!!d.title.trim()&&CITY_DOC_CATEGORIES_.includes(d.category)&&['pdf','docx'].includes(d.format)&&!!cityDocumentUrl_(d.url)&&cityInfoText_(d.note,160,true)&&typeof d.removed==='boolean'}
-function cityInfoValid_(r){return r&&cityInfoText_(r.home,120)&&!!r.home&&cityInfoText_(r.address,200)&&cityInfoText_(r.notes,500,true)&&Array.isArray(r.documents)&&r.documents.length<=24&&r.documents.every(cityInfoDocValid_)&&new Set(r.documents.map(d=>d.id)).size===r.documents.length&&new Set(r.documents.map(d=>cityDocumentUrl_(d.url).id)).size===r.documents.length&&r.documents.filter(d=>!d.removed).length<=12&&Number.isSafeInteger(r.version)&&r.version>0}
+function cityInfoValid_(r){return r&&cityInfoText_(r.home,120)&&!!r.home&&cityInfoText_(r.address,200,true)&&cityInfoText_(r.notes,500,true)&&Array.isArray(r.documents)&&r.documents.length<=24&&r.documents.every(cityInfoDocValid_)&&new Set(r.documents.map(d=>d.id)).size===r.documents.length&&new Set(r.documents.map(d=>cityDocumentUrl_(d.url).id)).size===r.documents.length&&r.documents.filter(d=>!d.removed).length<=12&&Number.isSafeInteger(r.version)&&r.version>0}
 function cityInfoPublic_(r){return {home:r.home,address:r.address,notes:r.notes,documents:r.documents.map(d=>({id:d.id,title:d.title,category:d.category,format:d.format,url:d.url,note:d.note,removed:d.removed})),version:r.version}}
-function cityIslandInfo_(store){const values=store.getProperties();return Object.keys(values).filter(k=>k.startsWith(CITY_INFO_PREFIX_)).map(k=>{let r;try{r=JSON.parse(values[k])}catch(e){}if(!cityInfoValid_(r)||k!==cityInfoKey_(r.home))throw Error('島嶼資料無法讀取，請重新同步');return cityInfoPublic_(r)}).sort((a,b)=>a.home.localeCompare(b.home))}
+function cityInfoRecords_(store){const values=store.getProperties(),records=new Map();for(const k of Object.keys(values).filter(k=>k.startsWith(CITY_INFO_PREFIX_)||k.startsWith(CITY_INFO_UTF8_PREFIX_))){let r;try{r=JSON.parse(values[k])}catch(e){}const modern=k.startsWith(CITY_INFO_UTF8_PREFIX_);if(!cityInfoValid_(r)||k!==(modern?cityInfoKey_(r.home):cityInfoLegacyKey_(r.home)))throw Error('島嶼資料無法讀取，請重新同步');if(modern||!records.has(r.home))records.set(r.home,r)}return Array.from(records.values())}
+function cityIslandInfo_(store){return cityInfoRecords_(store).map(cityInfoPublic_).sort((a,b)=>a.home.localeCompare(b.home))}
 function saveCityIslandInfo(p){
   if(!p||typeof p!=='object'||!['profile','document','remove','restore'].includes(p.action))throw Error('島嶼資料操作無效');
   const ss=book_();sheet_(ss,p.month);const homes=dashboardRows_(ss,p.month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd')).map(r=>r.property).concat(cityExtraHomes_());
-  if(!cityInfoText_(p.home,120)||!p.home||!homes.includes(p.home))throw Error('請選擇有效的物件島嶼');
+  if(!cityInfoText_(p.home,120)||!p.home||!(homes.includes(p.home)||p.home==='@central'))throw Error('請選擇有效的物件島嶼');
   if(!Number.isSafeInteger(p.version)||p.version<0||p.version>=Number.MAX_SAFE_INTEGER)throw Error('資料版本無效，請重新同步');
   const operationId=cityId_(p.operationId);let fields;
-  if(p.action==='profile'){if(!cityInfoText_(p.address,200)||!cityInfoText_(p.notes,500,true))throw Error('地址限 200 字，備註限 500 字');fields={address:p.address.trim(),notes:p.notes.trim()}}
+  if(p.action==='profile'){if(!cityInfoText_(p.address,200,true)||!cityInfoText_(p.notes,500,true))throw Error('地址限 200 字，備註限 500 字');fields={address:p.address.trim(),notes:p.notes.trim()}}
   else if(p.action==='document'){const d=p.document||{},url=cityDocumentUrl_(d.url),id=cityId_(d.id);fields={id,title:typeof d.title==='string'?d.title.trim():d.title,category:d.category,format:d.format,url:url?.url,note:typeof d.note==='string'?d.note.trim():d.note,removed:false};if(!cityInfoDocValid_(fields))throw Error('請填寫文件名稱、類別、PDF／Word 格式及有效的 Google Drive 文件連結')}
   else fields={id:cityId_(p.id)};
   const signature=JSON.stringify({action:p.action,fields}),lock=LockService.getScriptLock();lock.waitLock(20000);
   try{
-    const store=cityStore_(),key=cityInfoKey_(p.home),text=store.getProperty(key);let old;try{old=text?JSON.parse(text):null}catch(e){throw Error('島嶼資料無法讀取，請重新同步')}
+    const store=cityStore_(),key=cityInfoKey_(p.home),old=cityInfoRecords_(store).find(r=>r.home===p.home);
     if(old&&(!cityInfoValid_(old)||old.home!==p.home))throw Error('島嶼資料無法讀取，請重新同步');
     if(old?.lastOperationId===operationId){if(old.lastSignature!==signature)throw Error('儲存請求已使用，請重新開啟島嶼資料');return cityInfoPublic_(old)}
     if((old?.version||0)!==p.version)throw Error('這座島的資料已被更新。請關閉視窗並按「立即同步」，再重新編輯');
@@ -315,3 +321,11 @@ function saveCityIslandInfo(p){
     store.setProperty(key,encoded);return cityInfoPublic_(next);
   }finally{lock.releaseLock()}
 }
+
+
+const CITY_CUSTOM_ISLAND_PREFIX_='RENT_CITY_CUSTOM_ISLAND_V1_';
+function cityCustomIslands_(){const values=cityStore_().getProperties();return Object.keys(values).filter(k=>k.startsWith(CITY_CUSTOM_ISLAND_PREFIX_)).map(k=>{let r;try{r=JSON.parse(values[k])}catch(e){}if(!r||k!==CITY_CUSTOM_ISLAND_PREFIX_+cityId_(r.id)||!cityInfoText_(r.name,40)||!r.name.trim()||!Number.isInteger(r.tiles)||r.tiles<5||r.tiles>12)throw Error('自建島嶼資料無法讀取');return r}).sort((a,b)=>a.createdAt.localeCompare(b.createdAt))}
+function cityNewRent_(p){if(p.createRent!==true)return null;const r=p.rent||{},text=String(r.amount??'').trim();if(!/^\d+(\.\d{1,2})?$/.test(text)||Number(text)<=0||Number(text)>999999999||!Number.isInteger(r.due)||r.due<1||r.due>31)throw Error('新增帳目請填大於 0 的每月租金與 1 至 31 的應收日');return {month:p.month,amount:Number(text),due:r.due}}
+function cityRentColumns_(sh){cols_(sh);const h=sh.getRange(1,1,1,sh.getLastColumn()).getDisplayValues()[0].map(x=>x.trim());for(const key of ['每月應收日','應收金額','本月應收','差額'])if(h.filter(x=>x===key).length>1)throw Error('收租欄位重複：'+key);if(!h.includes('每月應收日')||!h.includes('應收金額')&&!h.includes('本月應收'))throw Error('此月份缺少應收日或應收金額欄位，無法建立帳目');return h}
+function cityAppendRent_(ss,saved){const sh=sheet_(ss,saved.rent.month),headers=cityRentColumns_(sh),values=sh.getDataRange().getValues(),marker='[棲島建立:'+saved.id+']',noteCol=headers.indexOf('備註'),nameCol=headers.indexOf('物件名稱'),found=values.findIndex((r,i)=>i>0&&String(r[noteCol]||'').includes(marker));if(found>=0){if(values[found][nameCol]!==saved.name)throw Error('建立識別與物件不符，請檢查帳表');return found+1}if(values.slice(1).some(r=>String(r[nameCol]||'').trim()===saved.name))throw Error('此月份已有同名物件，請檢查帳表後再試');const row=sh.getLastRow()+1;if(row>sh.getMaxRows())sh.insertRowsAfter(sh.getMaxRows(),1);const range=sh.getRange(row,1,1,headers.length);if(!range.canEdit()||range.getFormulas()[0].some(Boolean))throw Error('新增資料列禁止修改或含有公式，已停止');const next=headers.map(()=>''),set=(key,v)=>{const i=headers.indexOf(key);if(i>=0)next[i]=v};set('物件名稱',saved.name);set('類型','租金');set('每月應收日',saved.rent.due);set('應收金額',saved.rent.amount);set('本月應收',saved.rent.amount);set('是否已收',false);set('備註',marker);const letter=n=>{let s='';for(n++;n>0;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s},expected=headers.indexOf(headers.includes('本月應收')?'本月應收':'應收金額');set('差額','='+letter(headers.indexOf('實收金額'))+row+'-'+letter(expected)+row);range.setValues([next]);SpreadsheetApp.flush();return row}
+function createCityIsland(p){if(!p||!cityInfoText_(p.name,40)||!p.name.trim()||/^[=+@'\-]/.test(p.name.trim())||['中央戰情室','@central','__proto__','constructor','prototype'].includes(p.name.trim())||!Number.isInteger(p.tiles)||p.tiles<5||p.tiles>12)throw Error('請填寫 1 至 40 字島名（不可使用公式開頭），並選擇 5 至 12 塊地塊');const id=cityId_(p.id),name=p.name.trim(),rent=cityNewRent_(p),ss=book_(),sh=sheet_(ss,p.month);if(rent)cityRentColumns_(sh);const signature=JSON.stringify({name,tiles:p.tiles,rent}),lock=LockService.getScriptLock();lock.waitLock(20000);try{const store=cityStore_(),key=CITY_CUSTOM_ISLAND_PREFIX_+id,previous=store.getProperty(key);let saved=previous?JSON.parse(previous):null;if(saved){if(saved.signature!==signature)throw Error('此建立請求已使用，請重新開啟新增島嶼')}else{const allNames=new Set(cityExtraHomes_());months_(ss).forEach(month=>dashboardRows_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd')).forEach(r=>allNames.add(r.property)));if(allNames.has(name)||Object.values(cityProfiles_()).some(r=>r.displayName?.trim()===name))throw Error('這個島名已存在，請換一個名稱');if(cityCustomIslands_().length>=8||allNames.size>=16)throw Error('目前最多可新增 8 座島嶼，城市最多 16 座物件島');saved={id,name,tiles:p.tiles,createdAt:new Date().toISOString(),signature,rent,rentReady:!rent};store.setProperty(key,JSON.stringify(saved))}if(saved.rent&&!saved.rentReady){try{saved.rentRow=cityAppendRent_(ss,saved);saved.rentReady=true;store.setProperty(key,JSON.stringify(saved))}catch(e){throw Error('島嶼已保存，收租帳目尚未確認：'+e.message+'。請保留此表單再次送出；不會重複新增')}}return {id,name,tiles:saved.tiles,rentCreated:!!saved.rent&&saved.rentReady,month:saved.rent?.month}}finally{lock.releaseLock()}}
