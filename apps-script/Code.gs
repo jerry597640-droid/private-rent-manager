@@ -186,7 +186,7 @@ function citySnapshot_(ss,month,today,store) {
   const records=dashboardRows_(ss,month,today),groups=new Map();
   records.forEach(r=>{if(!groups.has(r.property))groups.set(r.property,[]);groups.get(r.property).push(r)});
   const properties=Array.from(groups,([name,list])=>Object.assign({name:name,firstRow:list[0].row},summarize_(list))).sort((a,b)=>a.name.localeCompare(b.name));
-  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,islands:cityIslandList_(properties,cityExtraHomes_()),records:records,residents:cityResidents_(store),buildings:cityBuildings_(store)};
+  return {month:month,today:today,generatedAt:new Date().toISOString(),summary:summarize_(records),properties:properties,islands:cityIslandList_(properties,cityExtraHomes_()),records:records,residents:cityResidents_(store),buildings:cityBuildings_(store),characterNames:cityCharacterNames_(store)};
 }
 function getCitySnapshot(month) { const ss=book_();return citySnapshot_(ss,month,Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'),cityStore_()); }
 function createResident_(store,p,homes) {
@@ -247,5 +247,30 @@ function saveCityBuilding(p){
     if(!old&&Object.keys(store.getProperties()).filter(k=>k.startsWith(CITY_BUILDING_PREFIX_)).length>=128)throw Error('建築配置已達容量上限');
     const saved={...fields,version:p.version+1,lastOperationId:operationId};
     store.setProperty(key,JSON.stringify(saved));return cityBuildingPublic_(saved);
+  }finally{lock.releaseLock()}
+}
+
+// Character display names are private preferences, separate from residents and accounting.
+const CITY_NAME_PREFIX_='RENT_CITY_NAME_V1_';
+const CITY_NAMED_ACTORS_=['owner','guest-fox','guest-owl','guest-catdragon','guest-otterturtle','guest-pandatanuki','guest-sealpenguin','guest-corgibee','guest-axolotldeer','guest-sprout','egg-moon','egg-garden','egg-boat'];
+function cityNameTextValid_(name){return typeof name==='string'&&name===name.trim()&&Array.from(name).length>=1&&Array.from(name).length<=20&&!/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/.test(name)}
+function cityNameValid_(r){return r&&typeof r.id==='string'&&(CITY_NAMED_ACTORS_.includes(r.id)||/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(r.id))&&Number.isSafeInteger(r.version)&&r.version>0&&(r.name===null||cityNameTextValid_(r.name))}
+function cityNamePublic_(r){return {id:r.id,name:r.name,version:r.version}}
+function cityCharacterNames_(store){const values=store.getProperties();return Object.keys(values).filter(k=>k.startsWith(CITY_NAME_PREFIX_)).map(k=>{let r;try{r=JSON.parse(values[k])}catch(e){}if(!cityNameValid_(r)||k!==CITY_NAME_PREFIX_+r.id)throw Error('角色名稱無法讀取，請重新同步');return cityNamePublic_(r)}).sort((a,b)=>a.id.localeCompare(b.id))}
+function saveCityCharacterName(p){
+  if(!p||typeof p!=='object'||!['rename','reset'].includes(p.action))throw Error('改名操作無效');
+  if(typeof p.id!=='string')throw Error('請選擇有效的角色');
+  const id=CITY_NAMED_ACTORS_.includes(p.id)?p.id:cityId_(p.id),operationId=cityId_(p.operationId);
+  if(!Number.isSafeInteger(p.version)||p.version<0||p.version>=Number.MAX_SAFE_INTEGER)throw Error('名稱版本無效，請重新同步');
+  if(p.action==='rename'&&(typeof p.name!=='string'||/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/.test(p.name)))throw Error('名字請填 1 至 20 個字，不可含換行或控制字元');
+  const name=p.action==='reset'?null:p.name.trim();if(name!==null&&!cityNameTextValid_(name))throw Error('名字請填 1 至 20 個字');
+  const lock=LockService.getScriptLock();lock.waitLock(20000);
+  try{
+    const store=cityStore_();if(!CITY_NAMED_ACTORS_.includes(id)&&!cityResidents_(store).some(r=>r.id===id))throw Error('找不到這位角色，請重新同步');
+    const key=CITY_NAME_PREFIX_+id,text=store.getProperty(key);let old;try{old=text?JSON.parse(text):null}catch(e){throw Error('角色名稱無法讀取，請重新同步')}
+    if(old&&(!cityNameValid_(old)||old.id!==id))throw Error('角色名稱無法讀取，請重新同步');
+    if(old?.lastOperationId===operationId){if(old.name!==name)throw Error('改名請求已使用，請重新開啟改名視窗');return cityNamePublic_(old)}
+    if((old?.version||0)!==p.version)throw Error('這個角色的名字已被更新。請關閉視窗並按「立即同步」，再重新改名');
+    const saved={id,name,version:p.version+1,lastOperationId:operationId};store.setProperty(key,JSON.stringify(saved));return cityNamePublic_(saved);
   }finally{lock.releaseLock()}
 }
