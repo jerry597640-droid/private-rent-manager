@@ -258,6 +258,7 @@ const City=(()=>{
   const residents=()=>[...(data?.residents||[]),...guests.map(r=>({...r,home:Number.isInteger(r.slot)&&cityHomes().length?cityHomes()[r.slot%cityHomes().length].name:''}))].map(r=>({...r,name:CityNames.name(data,r.id,r.name)}));
   const visible=()=>!c('city-view').hidden&&!document.hidden;
   const uid=()=>crypto.randomUUID();
+  let initialPatrolPending=true;
   let infoBusy=false,infoHome='',infoDocId='',infoPending=null;
   function infoControls(){c('island-file-dialog').querySelectorAll('button,input,select,textarea').forEach(el=>el.disabled=infoBusy)}
   function resetDocEditor(){infoDocId='';c('island-document-form').reset();c('island-document-editor-title').textContent='＋ 新增文件連結';c('island-document-editor').open=false}
@@ -303,7 +304,7 @@ const City=(()=>{
       data=result;lastSuccess=Date.now();scheduleRefresh();setLoading(false);error('');render();
       c('city-sync-label').textContent='已同步 · 每 60 秒更新';c('city-live').dataset.state='ready';
       c('city-updated').textContent='最近同步 '+new Date(result.generatedAt).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · 每 60 秒更新';
-      ensureScene().then(s=>{if(s&&data){s.setData(data);s.select(selected,pendingFocus);pendingFocus=false;s.filter(cityFilter);s.wake();renderDetail()}cover('')}).catch(e=>{failed3d=true;cover('');error('此裝置暫時無法顯示 3D 城市。仍可用快速登島與下方清單查看資料、邀請精靈。');});
+      ensureScene().then(s=>{if(s&&data){s.setData(data);s.select(selected,pendingFocus);pendingFocus=false;if(initialPatrolPending){initialPatrolPending=false;s.toggleAuto();s.followOwner()}s.filter(cityFilter);s.wake();renderDetail()}cover('')}).catch(e=>{failed3d=true;cover('');error('此裝置暫時無法顯示 3D 城市。仍可用快速登島與下方清單查看資料、邀請精靈。');});
     }).withFailureHandler(e=>{
       if(token!==seq)return;setLoading(false);scheduleRefresh();cover('');error('同步未完成：'+(e?.message||e)+(data?'。目前保留上次資料。':'。請按「立即同步」再試。'));if(!data)renderDetail();
     }).getCitySnapshot(month);
