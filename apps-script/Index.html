@@ -44,7 +44,7 @@
     @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
   
     .patrol-panel{margin:18px 0;padding:20px;border-radius:20px;background:linear-gradient(135deg,#e7f5ef,#f9f2de);border:1px solid #d4e5db}.patrol-heading{font-weight:800;font-size:20px;margin-bottom:10px}.patrol-controls{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.patrol-controls select{flex:1;min-width:160px}.patrol-controls button{width:auto;min-width:90px}.patrol-dialogue{display:grid;gap:10px;margin-top:15px}.patrol-bubble{padding:12px 15px;background:white;border-radius:16px;line-height:1.65}.patrol-bubble strong{display:block;color:#176b60}.patrol-note{font-size:12px;color:#617b73;margin-top:9px}
-.patrol-stage{position:relative;height:165px;overflow:hidden;border-radius:16px;background:linear-gradient(#d6edf9 0 62%,#a8d9b1 62%);margin:12px 0}.patrol-ground{position:absolute;left:12%;right:12%;bottom:12px;height:55px;background:#73ab76;border-radius:50%;box-shadow:0 9px #b59a70}.patrol-building{position:absolute;left:47%;bottom:50px;font-size:48px}.patrol-couple{position:absolute;left:25%;bottom:35px;display:flex;gap:5px;font-size:32px}.patrol-couple.moving{animation:coupleWalk .8s ease-in-out}@keyframes coupleWalk{0%{transform:translateX(-22px)}50%{transform:translateX(15px) translateY(-8px)}100%{transform:translateX(0)}}@media(prefers-reduced-motion:reduce){.patrol-couple.moving{animation:none}}.patrol-route{display:flex;gap:8px;overflow-x:auto;padding:12px 0}.patrol-stop{flex:0 0 auto;width:auto!important;padding:10px!important;margin:0!important;border-radius:24px!important;background:#dcebe3!important;color:#24483f!important}.patrol-stop.current{background:#176b60!important;color:white!important}.patrol-state{font-weight:700;margin:8px 0}</style>
+.patrol-stage{position:relative;height:165px;overflow:hidden;border-radius:16px;background:linear-gradient(#d6edf9 0 62%,#a8d9b1 62%);margin:12px 0}.patrol-ground{position:absolute;left:12%;right:12%;bottom:12px;height:55px;background:#73ab76;border-radius:50%;box-shadow:0 9px #b59a70}.patrol-building{position:absolute;left:47%;bottom:50px;font-size:48px}.patrol-couple{position:absolute;left:25%;bottom:35px;display:flex;gap:5px;font-size:32px}.patrol-couple.moving{animation:coupleWalk .8s ease-in-out}@keyframes coupleWalk{0%{transform:translateX(-22px)}50%{transform:translateX(15px) translateY(-8px)}100%{transform:translateX(0)}}@media(prefers-reduced-motion:reduce){.patrol-couple.moving{animation:none}}.patrol-route{display:flex;gap:8px;overflow-x:auto;padding:12px 0}.patrol-stop{flex:0 0 auto;width:auto!important;padding:10px!important;margin:0!important;border-radius:24px!important;background:#dcebe3!important;color:#24483f!important}.patrol-stop.current{background:#176b60!important;color:white!important}.patrol-state{font-weight:700;margin:8px 0}.patrol-auto-controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.patrol-auto-controls button{width:auto!important;flex:1 1 130px;margin:0!important}.patrol-auto-controls button:disabled{opacity:.55}.patrol-voice-note{font-size:12px;color:#526b66;margin-top:6px}</style>
 </head>
 <body>
 <div class="wrap">
@@ -57,7 +57,7 @@
   <section id="dashboard-view" aria-label="收租戰情室" hidden>
     <div class="dash-heading"><div><p class="section-label">RENT INTELLIGENCE</p><h2>收租戰情室</h2><p id="dash-updated">掌握每一筆收款，安排下一步。</p></div><div class="dash-period"><label class="field-label" for="dash-month">檢視月份</label><select id="dash-month" disabled></select></div></div>
     <div id="dash-status" class="status dash-status" data-kind="busy" role="status" aria-live="polite">正在準備收租戰情室…</div>
-    <div id="dash-content" hidden><section class="patrol-panel" id="patrol-panel"><div class="patrol-heading">🏝️ 房東夫妻巡島</div><div class="patrol-controls"><button type="button" id="patrol-prev">← 上一島</button><select id="patrol-select" aria-label="選擇巡視島嶼"></select><button type="button" id="patrol-next">下一島 →</button></div><div id="patrol-route" class="patrol-route" aria-label="巡島路線"></div><div id="patrol-state" class="patrol-state"></div><div class="patrol-stage" role="img" aria-label="房東與房東太太一起巡視房產島"><div class="patrol-ground"></div><div class="patrol-building">🏠</div><div class="patrol-couple" id="patrol-couple"><span>🧑‍💼</span><span>👩‍💼</span></div></div><div class="patrol-dialogue" id="patrol-dialogue" aria-live="polite"><div class="patrol-bubble">正在等待本月收租資料…</div></div><button type="button" id="patrol-open">查看這座島收款 →</button><div class="patrol-note">每次切換島嶼，依目前載入的月份對帳資料顯示；若資料未載入，不會推測已收狀態。</div></section>
+    <div id="dash-content" hidden><section class="patrol-panel" id="patrol-panel"><div class="patrol-heading">🏝️ 房東夫妻巡島</div><div class="patrol-controls"><button type="button" id="patrol-prev">← 上一島</button><select id="patrol-select" aria-label="選擇巡視島嶼"></select><button type="button" id="patrol-next">下一島 →</button></div><div class="patrol-auto-controls"><button type="button" id="patrol-start">▶ 一鍵巡視全部島嶼</button><button type="button" id="patrol-stop" disabled>■ 停止巡視</button><button type="button" id="patrol-speak">🔊 播報目前島嶼</button></div><div class="patrol-voice-note" id="patrol-voice-note" role="status">語音使用裝置內建繁體中文語音，優先選擇台灣女性聲線；實際聲線依手機支援情況而定。</div><div id="patrol-route" class="patrol-route" aria-label="巡島路線"></div><div id="patrol-state" class="patrol-state"></div><div class="patrol-stage" role="img" aria-label="房東與房東太太一起巡視房產島"><div class="patrol-ground"></div><div class="patrol-building">🏠</div><div class="patrol-couple" id="patrol-couple"><span>🧑‍💼</span><span>👩‍💼</span></div></div><div class="patrol-dialogue" id="patrol-dialogue" aria-live="polite"><div class="patrol-bubble">正在等待本月收租資料…</div></div><button type="button" id="patrol-open">查看這座島收款 →</button><div class="patrol-note">每次切換島嶼，依目前載入的月份對帳資料顯示；若資料未載入，不會推測已收狀態。</div></section>
       <div id="dash-warning" class="data-warning" hidden></div>
       <div class="dash-kpis">
         <article class="panel dash-kpi"><div class="kpi-label">本月應收</div><div class="kpi-number"><small>NT$</small><span id="dash-expected">—</span></div><div class="kpi-sub" id="dash-expected-note"></div></article>
@@ -241,6 +241,7 @@ function activateView(view){
 }));
 $('dash-month').addEventListener('change',()=>{attentionFilter='all';$('attention-search').value='';loadDashboard()});
 function loadDashboard(){
+  stopPatrol();
   const month=$('dash-month').value,seq=++dashRequest;dashBusy=true;dashData=null;$('dash-content').hidden=true;
   dashStatus('正在彙整各月份資料…','busy');updateControls();
   google.script.run.withSuccessHandler(data=>{
@@ -316,6 +317,45 @@ function renderProperties(){
 function openDashboardRecord(row){if(busy||dashBusy||!dashData)return;$('month').value=dashData.month;filter='all';activateView('entry');loadRows(undefined,row);$('entry-view').scrollIntoView({block:'start'})}
 function openCityRecord(month,row){if(busy||dashBusy||City.loading)return;$('month').value=month;filter='all';activateView('entry');loadRows(undefined,row);$('entry-view').scrollIntoView({block:'start'})}
 
+
+let patrolRunning=false,patrolToken=0;
+function stopPatrol(){patrolRunning=false;patrolToken++;if('speechSynthesis' in window)window.speechSynthesis.cancel();$('patrol-start').disabled=false;$('patrol-stop').disabled=true}
+function patrolVoice(){
+ if(!('speechSynthesis' in window))return null;
+ const voices=window.speechSynthesis.getVoices();
+ const zh=voices.filter(v=>/^zh[-_](TW|Hant)/i.test(v.lang));
+ return zh.find(v=>/female|woman|女|美佳|雅婷|曉臻|怡君/i.test(v.name))||zh[0]||voices.find(v=>/^zh/i.test(v.lang))||null;
+}
+function speakPatrol(text,token){
+ return new Promise(resolve=>{
+  if(!('speechSynthesis' in window)){ $('patrol-voice-note').textContent='此瀏覽器不支援語音播報，已保留文字對話。';resolve();return}
+  const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=.94;u.pitch=1.06;const v=patrolVoice();if(v)u.voice=v;
+  let finished=false;const done=()=>{if(!finished){finished=true;resolve()}};
+  u.onend=done;u.onerror=done;
+  if(token!==patrolToken){done();return}
+  window.speechSynthesis.speak(u);
+ });
+}
+function patrolLines(){
+ const p=dashData.properties[patrolIndex],count=Number(p.count)||0,paid=Number(p.paidCount)||0;
+ return ['房東：我們抵達'+p.name+'島，來看看'+dashData.month+'的房租。',
+ '房東太太：本月共有'+count+'筆收租項目，已勾選已收'+paid+'筆，尚未勾選'+Math.max(0,count-paid)+'筆。帳表記錄實收'+cash(Number(p.actual)||0)+'元，待收'+cash(Number(p.remaining)||0)+'元。'];
+}
+async function startPatrol(){
+ if(!dashData||!dashData.properties.length||patrolRunning)return;
+ stopPatrol();patrolRunning=true;const token=patrolToken;
+ $('patrol-start').disabled=true;$('patrol-stop').disabled=false;
+ for(let i=0;i<dashData.properties.length&&patrolRunning&&token===patrolToken;i++){
+  patrolIndex=i;renderPatrol();
+  $('patrol-voice-note').textContent='巡視中：第 '+(i+1)+' / '+dashData.properties.length+' 島';
+  for(const line of patrolLines()){if(!patrolRunning||token!==patrolToken)break;await speakPatrol(line,token)}
+ }
+ if(token===patrolToken){stopPatrol();$('patrol-voice-note').textContent='本輪巡島已完成。已收狀態來自 Google Sheets 登錄，非銀行入帳證明。'}
+}
+$('patrol-start').addEventListener('click',startPatrol);
+$('patrol-stop').addEventListener('click',()=>{stopPatrol();$('patrol-voice-note').textContent='已停止巡視'});
+$('patrol-speak').addEventListener('click',async()=>{if(!dashData||!dashData.properties.length)return;stopPatrol();const token=patrolToken;for(const line of patrolLines()){if(token!==patrolToken)break;await speakPatrol(line,token)}});
+
 let patrolIndex=0;
 function renderPatrol(){
  const couple=$('patrol-couple');if(couple){couple.classList.remove('moving');requestAnimationFrame(()=>couple.classList.add('moving'))}
@@ -329,16 +369,16 @@ function renderPatrol(){
  const wife=node('div',undefined,'patrol-bubble');wife.append(node('strong','👩 房東太太'));
  const paid=Number(p.paidCount)||0,count=Number(p.count)||0;
  const actual=Number(p.actual)||0,remaining=Number(p.remaining)||0;
- const route=$('patrol-route');route.replaceChildren();props.forEach((item,i)=>{const b=document.createElement('button');b.type='button';b.className='patrol-stop'+(i===patrolIndex?' current':'');b.textContent=(i===patrolIndex?'📍 ':'🏝️ ')+item.name;b.addEventListener('click',()=>{patrolIndex=i;renderPatrol()});route.append(b)});$('patrol-state').textContent=count===0?'⚪ 尚無登錄項目':paid===count?'🟢 已全部勾選已收':paid>0?'🟡 部分項目已收':'🟠 尚未勾選已收';$('patrol-open').disabled=!p.firstRow;$('patrol-open').onclick=()=>openDashboardRecord(p.firstRow);
+ const route=$('patrol-route');route.replaceChildren();props.forEach((item,i)=>{const b=document.createElement('button');b.type='button';b.className='patrol-stop'+(i===patrolIndex?' current':'');b.textContent=(i===patrolIndex?'📍 ':'🏝️ ')+item.name;b.addEventListener('click',()=>{stopPatrol();patrolIndex=i;renderPatrol()});route.append(b)});$('patrol-state').textContent=count===0?'⚪ 尚無登錄項目':paid===count?'🟢 已全部勾選已收':paid>0?'🟡 部分項目已收':'🟠 尚未勾選已收';$('patrol-open').disabled=!p.firstRow;$('patrol-open').onclick=()=>openDashboardRecord(p.firstRow);
  let message='本月共有 '+count+' 筆收租項目，已勾選已收 '+paid+' 筆，尚未勾選 '+Math.max(0,count-paid)+' 筆。已記錄實收 '+cash(actual)+'，待收 '+cash(remaining)+'。';
  if(!count)message='本月尚未找到這座島的收租項目。';
  wife.append(document.createTextNode(message));out.append(landlord,wife);
  const details=node('div','資料來源：'+month+' 月份 Google Sheets 對帳紀錄；已收依帳表勾選狀態判斷。','patrol-note');out.append(details);
  $('patrol-prev').disabled=patrolIndex===0;$('patrol-next').disabled=patrolIndex===props.length-1;
 }
-$('patrol-prev').addEventListener('click',()=>{patrolIndex--;renderPatrol()});
-$('patrol-next').addEventListener('click',()=>{patrolIndex++;renderPatrol()});
-$('patrol-select').addEventListener('change',e=>{patrolIndex=Number(e.target.value);renderPatrol()});
+$('patrol-prev').addEventListener('click',()=>{stopPatrol();patrolIndex--;renderPatrol()});
+$('patrol-next').addEventListener('click',()=>{stopPatrol();patrolIndex++;renderPatrol()});
+$('patrol-select').addEventListener('change',e=>{stopPatrol();patrolIndex=Number(e.target.value);renderPatrol()});
 
 loadMonths();
 </script>
