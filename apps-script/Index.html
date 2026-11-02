@@ -336,10 +336,11 @@ function speakPatrol(text,token){
   window.speechSynthesis.speak(u);
  });
 }
+function patrolDateLines(p){const records=(dashData.records||[]).filter(r=>r.property===p.name);if(!records.length)return '尚無可確認的應收日期資料。';return records.map(r=>{const due=r.due?'應收日期 '+r.due:'應收日期未設定';return r.type+'：'+due+'，'+(r.paid?'已登錄收款':'尚未勾選已收')+'。'}).join(' ')}
 function patrolLines(){
  const p=dashData.properties[patrolIndex],count=Number(p.count)||0,paid=Number(p.paidCount)||0;
  return ['房東：我們抵達'+p.name+'島，來看看'+dashData.month+'的房租。',
- '房東太太：本月共有'+count+'筆收租項目，已勾選已收'+paid+'筆，尚未勾選'+Math.max(0,count-paid)+'筆。帳表記錄實收'+cash(Number(p.actual)||0)+'元，待收'+cash(Number(p.remaining)||0)+'元。'];
+ '房東太太：'+patrolDateLines(p)+'本月共有'+count+'筆收租項目，已勾選已收'+paid+'筆，尚未勾選'+Math.max(0,count-paid)+'筆。帳表記錄實收'+cash(Number(p.actual)||0)+'元，待收'+cash(Number(p.remaining)||0)+'元。'];
 }
 async function startPatrol(){
  if(!dashData||!dashData.properties.length||patrolRunning)return;
@@ -371,7 +372,7 @@ function renderPatrol(){
  const actual=Number(p.actual)||0,remaining=Number(p.remaining)||0;
  const route=$('patrol-route');route.replaceChildren();props.forEach((item,i)=>{const b=document.createElement('button');b.type='button';b.className='patrol-stop'+(i===patrolIndex?' current':'');b.textContent=(i===patrolIndex?'📍 ':'🏝️ ')+item.name;b.addEventListener('click',()=>{stopPatrol();patrolIndex=i;renderPatrol()});route.append(b)});$('patrol-state').textContent=count===0?'⚪ 尚無登錄項目':paid===count?'🟢 已全部勾選已收':paid>0?'🟡 部分項目已收':'🟠 尚未勾選已收';$('patrol-open').disabled=!p.firstRow;$('patrol-open').onclick=()=>openDashboardRecord(p.firstRow);
  let message='本月共有 '+count+' 筆收租項目，已勾選已收 '+paid+' 筆，尚未勾選 '+Math.max(0,count-paid)+' 筆。已記錄實收 '+cash(actual)+'，待收 '+cash(remaining)+'。';
- if(!count)message='本月尚未找到這座島的收租項目。';
+ if(!count)message='本月尚未找到這座島的收租項目。';else message=patrolDateLines(p)+' '+message;
  wife.append(document.createTextNode(message));out.append(landlord,wife);
  const details=node('div','資料來源：'+month+' 月份 Google Sheets 對帳紀錄；已收依帳表勾選狀態判斷。','patrol-note');out.append(details);
  $('patrol-prev').disabled=patrolIndex===0;$('patrol-next').disabled=patrolIndex===props.length-1;
