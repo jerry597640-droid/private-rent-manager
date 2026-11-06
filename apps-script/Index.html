@@ -4,7 +4,7 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="referrer" content="no-referrer">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <style>
     :root{color-scheme:light;--ink:#18343a;--muted:#65787c;--accent:#176b60;--accent-dark:#11574e;--line:#dce5e3;--surface:#fff;--bg:#f3f6f5;--soft:#eaf4ef;--amber:#9a631d;--red:#b13b36;--radius:18px}
     *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Microsoft JhengHei","Noto Sans TC",sans-serif;-webkit-font-smoothing:antialiased}
@@ -44,7 +44,35 @@
     @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
   
     .patrol-panel{margin:18px 0;padding:20px;border-radius:20px;background:linear-gradient(135deg,#e7f5ef,#f9f2de);border:1px solid #d4e5db}.patrol-heading{font-weight:800;font-size:20px;margin-bottom:10px}.patrol-controls{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.patrol-controls select{flex:1;min-width:160px}.patrol-controls button{width:auto;min-width:90px}.patrol-dialogue{display:grid;gap:10px;margin-top:15px}.patrol-bubble{padding:12px 15px;background:white;border-radius:16px;line-height:1.65}.patrol-bubble strong{display:block;color:#176b60}.patrol-note{font-size:12px;color:#617b73;margin-top:9px}
-.patrol-stage{position:relative;height:165px;overflow:hidden;border-radius:16px;background:linear-gradient(#d6edf9 0 62%,#a8d9b1 62%);margin:12px 0}.patrol-ground{position:absolute;left:12%;right:12%;bottom:12px;height:55px;background:#73ab76;border-radius:50%;box-shadow:0 9px #b59a70}.patrol-building{position:absolute;left:47%;bottom:50px;font-size:48px}.patrol-couple{position:absolute;left:25%;bottom:35px;display:flex;gap:5px;font-size:32px}.patrol-couple.moving{animation:coupleWalk .8s ease-in-out}@keyframes coupleWalk{0%{transform:translateX(-22px)}50%{transform:translateX(15px) translateY(-8px)}100%{transform:translateX(0)}}@media(prefers-reduced-motion:reduce){.patrol-couple.moving{animation:none}}.patrol-route{display:flex;gap:8px;overflow-x:auto;padding:12px 0}.patrol-stop{flex:0 0 auto;width:auto!important;padding:10px!important;margin:0!important;border-radius:24px!important;background:#dcebe3!important;color:#24483f!important}.patrol-stop.current{background:#176b60!important;color:white!important}.patrol-state{font-weight:700;margin:8px 0}.patrol-auto-controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.patrol-auto-controls button{width:auto!important;flex:1 1 130px;margin:0!important}.patrol-auto-controls button:disabled{opacity:.55}.patrol-voice-note{font-size:12px;color:#526b66;margin-top:6px}.patrol-wardrobe{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.patrol-wardrobe label{display:block;font-size:13px;font-weight:700}.patrol-wardrobe select{width:100%;min-width:0;margin-top:5px}@media(max-width:420px){.patrol-wardrobe{grid-template-columns:1fr}}</style>
+.patrol-stage{position:relative;height:165px;overflow:hidden;border-radius:16px;background:linear-gradient(#d6edf9 0 62%,#a8d9b1 62%);margin:12px 0}.patrol-ground{position:absolute;left:12%;right:12%;bottom:12px;height:55px;background:#73ab76;border-radius:50%;box-shadow:0 9px #b59a70}.patrol-building{position:absolute;left:47%;bottom:50px;font-size:48px}.patrol-couple{position:absolute;left:25%;bottom:35px;display:flex;gap:5px;font-size:32px}.patrol-couple.moving{animation:coupleWalk .8s ease-in-out}@keyframes coupleWalk{0%{transform:translateX(-22px)}50%{transform:translateX(15px) translateY(-8px)}100%{transform:translateX(0)}}@media(prefers-reduced-motion:reduce){.patrol-couple.moving{animation:none}}.patrol-route{display:flex;gap:8px;overflow-x:auto;padding:12px 0}.patrol-stop{flex:0 0 auto;width:auto!important;padding:10px!important;margin:0!important;border-radius:24px!important;background:#dcebe3!important;color:#24483f!important}.patrol-stop.current{background:#176b60!important;color:white!important}.patrol-state{font-weight:700;margin:8px 0}.patrol-auto-controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.patrol-auto-controls button{width:auto!important;flex:1 1 130px;margin:0!important}.patrol-auto-controls button:disabled{opacity:.55}.patrol-voice-note{font-size:12px;color:#526b66;margin-top:6px}.patrol-wardrobe{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.patrol-wardrobe label{display:block;font-size:13px;font-weight:700}.patrol-wardrobe select{width:100%;min-width:0;margin-top:5px}@media(max-width:420px){.patrol-wardrobe{grid-template-columns:1fr}}
+    /* Mobile workspace: keep totals first and primary actions within reach. */
+    :root{--muted:#536c68;--bg:#f4f6f2;--line:#d9e3db;--nav-height:76px}
+    html{scroll-padding-bottom:110px}button,summary{touch-action:manipulation}
+    .wrap{max-width:1200px}.brand small{letter-spacing:1.4px}.view-tabs button{min-height:48px;display:flex;gap:8px;align-items:center;justify-content:center}.view-tabs button>span{font-size:20px}
+    .dash-heading h2{font-size:32px;letter-spacing:-.04em}.dash-heading .section-label{font-size:12px;letter-spacing:.12em;color:var(--accent)}.dash-heading p{font-size:14px}
+    .dash-period{width:300px}.month-switch{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:6px}.month-switch select{font-size:16px;text-align:center}.month-switch button{font-size:26px;min-height:50px;padding:0}.field-label .text-button{border:0;background:transparent;color:var(--accent);font-size:14px;min-height:44px;padding:6px 8px}
+    .dash-shortcuts{display:flex;gap:8px;align-items:center;margin:0 0 16px;flex-wrap:wrap}.dash-shortcuts button{min-height:46px;font-size:14px;background:#fff}.dash-shortcuts>span{margin-left:auto;font-size:12px;color:var(--muted)}
+    .dash-kpi{padding:24px;min-height:146px}.dash-kpi .kpi-label{font-size:14px;margin-bottom:12px}.kpi-number{font-size:30px;line-height:1.25}.kpi-sub{font-size:12px;line-height:1.7}.dash-kpi.featured{background:#175c51;border-color:#175c51}.dash-kpi.alert{background:#fff7f3;border-color:#efd9d0}
+    .dash-status{font-size:13px}.dash-strip{margin-bottom:24px}.strip-label,.muted,.focus-foot,.attention-foot,.data-warning{font-size:13px}.focus-item strong,.attention-item strong{font-size:15px}.focus-item small{font-size:13px}.focus-count{font-size:24px}.attention-filters button,.attention-item .icon-button,.property-card button{min-height:46px;font-size:14px}.attention-tools input{font-size:16px;min-height:48px}.trend-month{min-width:44px}.trend-chart{min-width:620px}.trend-label,.trend-scale,.legend,.trend-details summary{font-size:12px}.trend-details summary,.dash-method summary{min-height:44px;padding:12px 0}.dash-method{font-size:13px}.property-values b{font-size:16px;overflow-wrap:anywhere}.property-card h4{font-size:17px}
+    .patrol-panel{padding:24px;margin:24px 0;border-radius:22px;background:#edf3e9;border-color:#d5e1d1;scroll-margin-top:16px}.patrol-header{display:flex;justify-content:space-between;align-items:center;gap:10px}.patrol-header h3{font-size:23px;margin:0 0 18px}.patrol-header .section-label{font-size:12px;letter-spacing:.07em}.patrol-header>.badge{background:#fff;align-self:start}
+    .patrol-panel button{min-height:48px;border:1px solid #bdcfc2;border-radius:12px;background:white;color:var(--ink);font-size:15px;padding:10px 15px;font-weight:650}.patrol-controls{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:8px}.patrol-controls select{min-width:0;font-size:16px}.patrol-controls button{min-width:0;font-size:22px;padding:0}.patrol-route{position:relative;padding:14px 0;gap:8px;max-width:100%}.patrol-route .patrol-stop{font-size:14px;border-color:transparent;max-width:260px;white-space:normal;overflow-wrap:anywhere}
+    .patrol-layout{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:24px;align-items:start}.patrol-scene,.patrol-info{min-width:0}.patrol-stage{height:220px;margin:0;background:linear-gradient(#dceeea 0 62%,#c4dbc1 62%)}.patrol-ground{background:#8ab18a;bottom:20px}.patrol-building{font-size:65px;bottom:58px;left:48%}.patrol-couple{font-size:43px;bottom:40px;left:20%}.patrol-island-name{position:absolute;top:16px;left:16px;right:16px;text-align:center;font-size:16px;font-weight:750;overflow-wrap:anywhere}.patrol-state{font-size:16px;line-height:1.6;margin:0 0 10px}.patrol-dialogue{margin:0;gap:9px}.patrol-bubble{font-size:14px;line-height:1.85;margin:0;padding:14px}.patrol-bubble strong{font-size:13px;margin-bottom:5px}.patrol-bubble:nth-child(2){background:#fffdf6}
+    .wardrobe{margin-top:12px;border-radius:14px;background:#ffffffa8;padding:4px 14px}.wardrobe summary{min-height:48px;padding:12px 0;font-size:15px;font-weight:650;cursor:pointer}.wardrobe summary span{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:6px}.patrol-wardrobe{grid-template-columns:1fr;gap:14px;margin:10px 0 16px}.patrol-wardrobe label{font-size:14px}.patrol-wardrobe select{font-size:16px}.patrol-note,.patrol-voice-note{font-size:13px;line-height:1.75;color:#4f6860}
+    .patrol-auto-controls{display:grid;grid-template-columns:2fr 1fr 1fr;margin:18px 0 8px}.patrol-auto-controls button{min-width:0;white-space:normal}.patrol-auto-controls #patrol-start{background:var(--accent);color:#fff;border-color:var(--accent)}.patrol-voice-note{background:#ffffff9c;border-radius:10px;padding:10px 12px}.patrol-records{display:grid;gap:10px;margin:12px 0}.patrol-record{background:white;border:1px solid var(--line);border-radius:14px;padding:14px}.patrol-record-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px}.patrol-record dl{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.patrol-record dl>div{min-width:0}.patrol-record dt{font-size:12px;color:var(--muted);margin-bottom:4px}.patrol-record dd{font-size:14px;font-weight:600;margin:0;overflow-wrap:anywhere}.patrol-record button,#patrol-open{width:100%;text-align:center;color:var(--accent)}#patrol-open{background:transparent}
+    .record-saved{font-size:13px;line-height:1.7;color:var(--muted);margin:10px 0 0}.field-help,.note-meta,.paid-control small,.save-note{font-size:13px}.field-label,.paid-control strong{font-size:15px}.filter,.record-nav button{min-height:48px;font-size:14px}.paid-control{min-height:76px}.paid-control input{width:26px;height:26px}.record-badge,.badge{font-size:13px}.status{overflow-wrap:anywhere}.dialog{max-height:calc(100dvh - 32px);overflow:auto}.dialog-actions{flex-wrap:wrap}.dialog-actions button{min-height:48px}.savebar .primary{min-height:52px}.property-name{font-size:15px}.property-type,.tiny-status{font-size:13px}
+    @media(max-width:760px){
+      .wrap,body:has(#city-view:not([hidden])) .wrap{padding:20px 16px calc(var(--nav-height) + env(safe-area-inset-bottom) + 28px)!important}.topbar{margin-bottom:24px;gap:8px}.brand small{font-size:9px;letter-spacing:.08em}h1{font-size:19px}.top-actions .icon-button{min-width:46px;min-height:46px}.brandmark{width:38px;height:42px}.top-actions{gap:4px}.mode.test{font-size:11px;max-width:48px;text-align:center;line-height:1.4;padding:4px 6px}
+      .wrap>.view-tabs,body:has(#city-view:not([hidden])) .wrap>.view-tabs{position:fixed;z-index:20;bottom:0;left:0;right:0;width:100%;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#fffcf8f5;border-radius:20px 20px 0 0;border:1px solid var(--line);box-shadow:0 -4px 24px #18343a0c;backdrop-filter:blur(12px);gap:6px}.wrap>.view-tabs button{flex:1;min-width:0;min-height:58px;font-size:13px;flex-direction:column;gap:3px;padding:6px 3px}.view-tabs button>span{font-size:21px;line-height:22px}
+      .dash-heading{display:block;margin-bottom:14px}.dash-heading h2{font-size:29px;margin:7px 0 8px}.dash-heading p{font-size:13px}.dash-period{width:100%;margin-top:14px}.dash-period .field-label{font-size:14px;margin-bottom:5px;min-height:34px}.dash-heading .dash-period select{font-size:16px;min-height:50px}.dash-status{margin-bottom:14px;padding:11px 13px}.dash-shortcuts{margin-bottom:14px}.dash-shortcuts button{font-size:13px;padding:8px 11px}.dash-shortcuts>span{font-size:11px}
+      .dash-kpis{gap:10px}.dash-kpi{padding:17px 14px;min-height:132px}.dash-kpi .kpi-label{font-size:13px;margin-bottom:11px}.kpi-number{font-size:clamp(21px,6vw,28px);overflow-wrap:anywhere}.kpi-sub{font-size:12px;margin-top:8px}.dash-strip{padding:18px;margin-bottom:18px}.strip-value{font-size:18px}.dash-strip>div:nth-child(3){padding-left:14px}
+      .patrol-panel{padding:18px 14px;margin:18px 0}.patrol-header h3{font-size:21px}.patrol-layout{grid-template-columns:minmax(0,1fr);gap:18px}.patrol-stage{height:195px}.patrol-wardrobe{grid-template-columns:1fr 1fr}.patrol-wardrobe select{padding-left:9px;padding-right:6px}.patrol-auto-controls{grid-template-columns:1fr 1fr;gap:9px}.patrol-auto-controls #patrol-start{grid-column:1/-1;min-height:54px;font-size:16px}.patrol-state{font-size:15px}.patrol-route{padding:12px 0}.patrol-record dd{font-size:15px}.patrol-note{font-size:12px}
+      .dash-card{padding:20px 16px}.attention-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.attention-filters button{font-size:13px}.focus-item small{font-size:12px}.attention-item .icon-button{min-height:48px}.legend{gap:8px}.dash-grid .dash-card:has(.focus-list){order:-1}
+      .selector{padding:18px}.detail{padding:20px 18px 0}.detail-head{gap:8px}.detail h2{font-size:23px}.detail-meta{font-size:14px}.fields{gap:18px}.amount-wrap input{height:64px}.savebar{margin:0 -18px;padding:12px 16px;bottom:calc(var(--nav-height) + env(safe-area-inset-bottom));gap:10px;z-index:10}.savebar .primary{padding:12px 16px;min-height:52px}.save-note{font-size:12px}.save-note>span{display:none}.record-nav button{font-size:14px}.record-nav{padding-bottom:8px}.detail:focus-within{scroll-margin-bottom:150px}
+      #city-view{padding-bottom:10px}#city-view .city-controls button{width:44px;height:44px}#city-view .city-controls{gap:8px}#city-view .city-help button{font-size:12px;min-height:44px}
+    }
+    @media(max-width:360px){.wrap{padding-left:12px;padding-right:12px}.brand{gap:6px}.brandmark{display:none}.dash-heading h2{font-size:27px}.dash-shortcuts>span{width:100%;margin:0}.patrol-wardrobe{grid-template-columns:1fr}.patrol-record dl{gap:10px}.savebar .primary{padding:10px 12px}.dash-strip{gap:14px}}
+
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -52,20 +80,43 @@
     <div class="brand"><span class="brandmark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V5l8-3v19M12 8l8 3v10M2 21h20M7.5 7v1m0 4v1m0 4v1M16 12v1m0 4v1"/></svg></span><div><small>YOUR RENT WORKSPACE</small><h1>每月收租管理</h1></div></div>
     <div class="top-actions"><span class="mode" id="mode">私人工作台</span><button class="icon-button" id="reload" type="button" aria-label="重新讀取資料" title="重新讀取資料"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 19.4 9M4.6 15a8 8 0 0 0 13.3 2.9"/></svg><span class="refresh-label">重新讀取</span></button></div>
   </header>
-  <nav class="view-tabs" aria-label="工作台功能"><button type="button" id="nav-city" aria-pressed="true" aria-controls="city-view">島嶼城市</button><button type="button" id="nav-dashboard" aria-pressed="false" aria-controls="dashboard-view">收租戰情室</button><button type="button" id="nav-entry" aria-pressed="false" aria-controls="entry-view">收款登錄</button></nav>
+  <nav class="view-tabs" aria-label="工作台功能">
+    <button type="button" id="nav-dashboard" aria-pressed="true" aria-controls="dashboard-view"><span aria-hidden="true">▦</span>收租總覽</button>
+    <button type="button" id="nav-city" aria-pressed="false" aria-controls="city-view"><span aria-hidden="true">⌂</span>島嶼城市</button>
+    <button type="button" id="nav-entry" aria-pressed="false" aria-controls="entry-view"><span aria-hidden="true">＋</span>收款登錄</button>
+  </nav>
   <?!= HtmlService.createHtmlOutputFromFile('City').getContent(); ?>
-  <section id="dashboard-view" aria-label="收租戰情室" hidden>
-    <div class="dash-heading"><div><p class="section-label">RENT INTELLIGENCE</p><h2>收租戰情室</h2><p id="dash-updated">掌握每一筆收款，安排下一步。</p></div><div class="dash-period"><label class="field-label" for="dash-month">檢視月份</label><select id="dash-month" disabled></select></div></div>
+  <section id="dashboard-view" aria-label="收租總覽">
+    <div class="dash-heading"><div><p class="section-label">每月收租 · 心裡有數</p><h2>這個月，收得如何？</h2><p id="dash-updated">掌握每一筆收款，安排下一步。</p></div>
+      <div class="dash-period"><div class="field-label"><label for="dash-month">收租月份</label><button type="button" id="dash-current" class="text-button" disabled>回本月</button></div><div class="month-switch"><button type="button" id="dash-prev-month" class="icon-button" aria-label="上一個有帳表的月份" disabled>‹</button><select id="dash-month" disabled></select><button type="button" id="dash-next-month" class="icon-button" aria-label="下一個有帳表的月份" disabled>›</button></div></div>
+    </div>
     <div id="dash-status" class="status dash-status" data-kind="busy" role="status" aria-live="polite">正在準備收租戰情室…</div>
-    <div id="dash-content" hidden><section class="patrol-panel" id="patrol-panel"><div class="patrol-heading">🏝️ 房東夫妻巡島</div><div class="patrol-controls"><button type="button" id="patrol-prev">← 上一島</button><select id="patrol-select" aria-label="選擇巡視島嶼"></select><button type="button" id="patrol-next">下一島 →</button></div><div class="patrol-wardrobe"><label>👨 房東角色／穿著<select id="landlord-outfit"><option value="business">商務房東 🧑‍💼</option><option value="casual">休閒巡島 🧑</option><option value="builder">工程巡檢 👷</option><option value="detective">收租偵探 🕵️</option><option value="formal">正式禮服 🤵</option></select></label><label>👩 房東太太角色／穿著<select id="landlady-outfit"><option value="business">商務房東太太 👩‍💼</option><option value="casual">休閒巡島 👩</option><option value="builder">工程巡檢 👷‍♀️</option><option value="detective">收租偵探 🕵️‍♀️</option><option value="formal">正式禮服 👩‍🎓</option></select></label></div><div class="patrol-auto-controls"><button type="button" id="patrol-start">▶ 一鍵巡視全部島嶼</button><button type="button" id="patrol-stop" disabled>■ 停止巡視</button><button type="button" id="patrol-speak">🔊 播報目前島嶼</button></div><div class="patrol-voice-note" id="patrol-voice-note" role="status">語音使用裝置內建繁體中文語音，優先選擇台灣女性聲線；實際聲線依手機支援情況而定。</div><div id="patrol-route" class="patrol-route" aria-label="巡島路線"></div><div id="patrol-state" class="patrol-state"></div><div class="patrol-stage" role="img" aria-label="房東與房東太太一起巡視房產島"><div class="patrol-ground"></div><div class="patrol-building">🏠</div><div class="patrol-couple" id="patrol-couple"><span>🧑‍💼</span><span>👩‍💼</span></div></div><div class="patrol-dialogue" id="patrol-dialogue" aria-live="polite"><div class="patrol-bubble">正在等待本月收租資料…</div></div><button type="button" id="patrol-open">查看這座島收款 →</button><div class="patrol-note">每次切換島嶼，依目前載入的月份對帳資料顯示；若資料未載入，不會推測已收狀態。</div></section>
+    <div id="dash-content" hidden>
+      <div class="dash-shortcuts"><button type="button" id="jump-patrol" class="icon-button">🏝️ 夫妻巡島</button><button type="button" id="jump-overdue" class="icon-button">查看逾期待收 →</button><span>金額單位 NT$</span></div>
       <div id="dash-warning" class="data-warning" hidden></div>
-      <div class="dash-kpis">
+      <div class="dash-kpis" aria-label="收租金額，單位新台幣">
         <article class="panel dash-kpi"><div class="kpi-label">本月應收</div><div class="kpi-number"><small>NT$</small><span id="dash-expected">—</span></div><div class="kpi-sub" id="dash-expected-note"></div></article>
         <article class="panel dash-kpi featured"><div class="kpi-label">本月實收</div><div class="kpi-number"><small>NT$</small><span id="dash-actual">—</span></div><div class="kpi-sub" id="dash-comparison"></div></article>
         <article class="panel dash-kpi"><div class="kpi-label">待收餘額</div><div class="kpi-number"><small>NT$</small><span id="dash-remaining">—</span></div><div class="kpi-sub" id="dash-pending-note"></div></article>
         <article class="panel dash-kpi alert"><div class="kpi-label">逾期未收</div><div class="kpi-number"><small>NT$</small><span id="dash-overdue">—</span></div><div class="kpi-sub" id="dash-overdue-note"></div></article>
       </div>
       <section class="panel dash-strip" aria-label="收款進度與貸款"><div><div class="strip-label">金額到位率</div><div class="strip-value" id="dash-rate">—</div><div class="progress" role="progressbar" aria-label="金額到位率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="dash-progress"><span id="dash-progress-fill"></span></div></div><div><div class="strip-label">本月貸款欄合計</div><div class="strip-value" id="dash-loan">—</div></div><div><div class="strip-label">扣貸款後實收</div><div class="strip-value" id="dash-after-loan">—</div></div></section>
+
+      <section class="patrol-panel" id="patrol-panel" aria-labelledby="patrol-heading">
+        <div class="patrol-header"><div><p class="section-label">一起走走，也看看帳</p><h3 id="patrol-heading">房東夫妻巡島</h3></div><span id="patrol-position" class="badge">—</span></div>
+        <div class="patrol-controls"><button type="button" id="patrol-prev" aria-label="巡視上一島">←</button><select id="patrol-select" aria-label="選擇巡視島嶼"></select><button type="button" id="patrol-next" aria-label="巡視下一島">→</button></div>
+        <div class="patrol-auto-controls"><button type="button" id="patrol-start">▶ 一鍵巡島</button><button type="button" id="patrol-stop" disabled>■ 停止</button><button type="button" id="patrol-speak">♫ 播報本島</button></div>
+        <div class="patrol-voice-note" id="patrol-voice-note" role="status" aria-live="polite">點按後啟用台灣中文語音；實際聲線依裝置支援。無語音時可閱讀文字巡島。</div>
+        <div id="patrol-route" class="patrol-route" role="group" aria-label="巡島路線"></div>
+        <div class="patrol-layout"><div class="patrol-scene">
+          <div class="patrol-stage" role="img" aria-label="房東與房東太太一起巡視房產島"><span id="patrol-island-name" class="patrol-island-name"></span><div class="patrol-ground"></div><div class="patrol-building">🏠</div><div class="patrol-couple" id="patrol-couple"><span>🧑‍💼</span><span>👩‍💼</span></div></div>
+          <details class="wardrobe"><summary>夫妻更衣室 <span>各自選擇喜歡的穿著</span></summary><div class="patrol-wardrobe">
+            <label for="landlord-outfit">房東穿著<select id="landlord-outfit"><option value="business">商務房東 🧑‍💼</option><option value="casual">休閒巡島 🧑</option><option value="builder">工程巡檢 👷</option><option value="detective">收租偵探 🕵️</option><option value="formal">正式禮服 🤵</option></select></label>
+            <label for="landlady-outfit">房東太太穿著<select id="landlady-outfit"><option value="business">商務房東太太 👩‍💼</option><option value="casual">休閒巡島 👩</option><option value="builder">工程巡檢 👷‍♀️</option><option value="detective">收租偵探 🕵️‍♀️</option><option value="formal">正式禮服 👩‍🎓</option></select></label>
+          </div><p class="patrol-note">造型套用於這裡的夫妻角色，保留在此裝置；3D 城市角色維持原造型。</p></details>
+        </div><div class="patrol-info"><div id="patrol-state" class="patrol-state" role="status"></div><div class="patrol-dialogue" id="patrol-dialogue"></div><div id="patrol-records" class="patrol-records" aria-label="本島逐筆收款"></div><button type="button" id="patrol-open">前往這座島收款登錄 →</button></div></div>
+        <p class="patrol-note">依所選月份的帳表紀錄巡視。巡島與換裝不會修改收款資料。</p>
+      </section>
       <div class="dash-grid">
         <section class="panel dash-card"><div class="card-head"><h3>近 12 個月收款趨勢</h3><div class="legend"><span><i></i>應收</span><span><i class="actual"></i>實收</span></div></div><div class="trend-scale" id="trend-scale"></div><div class="trend-scroll"><div class="trend-chart" id="trend-chart" aria-label="各月應收與實收，可點選月份"></div></div><p class="muted">依帳表月份統計 · 點選月份切換 · 無分頁月份不視為零收入</p><details class="trend-details"><summary>查看各月數值</summary><div class="table-scroll"><table><thead><tr><th>月份</th><th>應收</th><th>實收</th><th>待收</th></tr></thead><tbody id="trend-table"></tbody></table></div></details></section>
         <section class="panel dash-card"><div class="card-head"><h3>優先處理</h3><span class="muted" id="focus-date"></span></div><div class="focus-list"><button class="focus-item urgent" type="button" data-attention="overdue"><span><strong>逾期追蹤</strong><small>已過應收日，仍有待收餘額</small></span><span class="focus-count" id="focus-overdue">—</span></button><button class="focus-item" type="button" data-attention="soon"><span><strong>未來 7 天到期</strong><small>含今天，可先安排收款確認</small></span><span class="focus-count" id="focus-soon">—</span></button><button class="focus-item" type="button" data-attention="review"><span><strong>資料待核對</strong><small>金額、日期或勾選狀態需確認</small></span><span class="focus-count" id="focus-review">—</span></button></div><p class="focus-foot" id="focus-foot"></p></section>
@@ -92,10 +143,10 @@
     <div>
       <section class="panel detail">
         <div id="record-content" hidden>
-          <div class="detail-head"><div><p class="section-label">PAYMENT DETAILS</p><h2 id="record-name"></h2><div class="detail-meta" id="record-meta"></div></div><span id="record-badge" class="badge">待收款</span></div>
+          <div class="detail-head"><div><p class="section-label">PAYMENT DETAILS</p><h2 id="record-name"></h2><div class="detail-meta" id="record-meta"></div><p class="record-saved" id="record-saved"></p></div><span id="record-badge" class="badge">待收款</span></div>
           <form id="rent-form">
             <div class="fields">
-              <div><label class="field-label" for="date">實際入帳日</label><input id="date" type="date"><div class="field-help">依款項實際入帳的日期填寫</div></div>
+              <div><label class="field-label" for="date">實際入帳日</label><input id="date" type="date" aria-describedby="date-help"><div class="field-help" id="date-help">依款項實際入帳的日期填寫</div></div>
               <div class="amount-field"><label class="field-label" for="amount">實收金額（元）</label><div class="amount-wrap"><span class="prefix" aria-hidden="true">NT$</span><input id="amount" type="number" min="0" max="999999999" step="0.01" inputmode="decimal" placeholder="0"></div><div class="field-help">可輸入部分收款，最多兩位小數</div></div>
             </div>
             <label class="paid-control"><input id="paid" type="checkbox"><span><strong id="paid-label">標記為已收款</strong><small>勾選時，請填妥金額及入帳日</small></span></label>
@@ -104,7 +155,7 @@
         </div>
         <div class="empty" id="empty"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 3h10l3 3v15H4V3h3M8 9h8M8 13h8M8 17h5"/></svg><h2 id="empty-title">正在準備工作台</h2><p id="empty-message">讀取完成後，即可選擇物件登錄收款。</p></div>
         <div class="status" id="status" data-kind="busy" role="status" aria-live="polite">正在讀取月份…</div>
-        <div class="savebar"><div class="save-note"><strong id="edit-state">尚未選擇物件</strong><span>確認後才會更新收款資料</span></div><button class="primary" id="save" type="submit" form="rent-form" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span id="save-label">儲存收款</span></button></div>
+        <div class="savebar"><div class="save-note"><strong id="edit-state" role="status" aria-live="polite">尚未選擇物件</strong><span>確認後才會更新收款資料</span></div><button class="primary" id="save" type="submit" form="rent-form" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span id="save-label">儲存收款</span></button></div>
       </section>
       <nav class="record-nav" aria-label="物件切換"><button id="prev" type="button" disabled>← 上一筆</button><span id="position">—</span><button id="next" type="button" disabled>下一筆 →</button></nav>
     </div>
@@ -116,7 +167,8 @@
 <script>
 const $=id=>document.getElementById(id),filterButtons=[...document.querySelectorAll('[data-filter]')];
 let rows=[],busy=true,loadedMonth='',request=0,selectedRow=null,filter='all',pendingAction=null;
-let activeView='city',dashBusy=false,dashRequest=0,dashData=null,attentionFilter='all';
+let activeView='dashboard',dashBusy=false,dashRequest=0,dashData=null,attentionFilter='all';
+let calendarMonth='';
 const money=value=>Number(value||0).toLocaleString('zh-TW',{maximumFractionDigits:2});
 const current=()=>rows.find(r=>r.row===selectedRow);
 const visibleRows=()=>rows.filter(r=>filter==='all'||(filter==='paid'?r.paid:!r.paid));
@@ -134,6 +186,7 @@ function updateControls(){
   $('position').textContent=index>=0?(index+1)+' / '+list.length+' 筆':'沒有可選物件';
   $('edit-state').textContent=busy?'正在處理…':!r?'尚未選擇物件':dirty()?'有尚未儲存的變更':'資料已同步';
   $('save-label').textContent=busy?'處理中…':'儲存收款';
+  updateMonthControls();
   $('note-count').textContent=$('note').value.length+' / 500';
   $('paid-label').textContent=$('paid').checked?'此筆標記為已收款':'標記為已收款';
 }
@@ -174,6 +227,7 @@ function renderList(){
 function renderForm(){
   const r=current();$('record-content').hidden=!r;$('empty').hidden=!!r;
   $('date').value=r?r.date||'':'';$('amount').value=r?r.amount??'':'';$('paid').checked=!!r?.paid;$('note').value=r?r.note||'':'';
+  $('record-saved').textContent=r?'帳表原紀錄：'+(r.date||'尚無入帳日')+' · '+(r.amount===''?'尚無金額':cash(r.amount)):'';
   if(r){$('record-name').textContent=r.property;$('record-meta').textContent=loadedMonth+' · '+r.type;$('record-badge').textContent=r.paid?'已收款':'待收款';$('record-badge').className='badge'+(r.paid?' paid':'')}
   else{$('empty-title').textContent=busy?'正在準備工作台':'目前沒有符合的物件';$('empty-message').textContent=busy?'讀取完成後，即可選擇物件登錄收款。':'您可以切換收款狀態或月份，查看其他紀錄。'}
   updateControls();
@@ -192,7 +246,8 @@ function loadMonths(preferred){
     $('mode').textContent=ctx.testMode?'測試副本':'正式收租工作台';$('mode').classList.toggle('test',ctx.testMode);
     ['month','dash-month','city-month'].forEach(id=>{$(id).replaceChildren();ctx.months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m.replace('-',' 年 ')+' 月';$(id).append(o)})});
     if(!ctx.months.length){fail('找不到月份分頁');return}
-    const present=(ctx.today||'').slice(0,7),past=ctx.months.filter(m=>m<=present);
+    calendarMonth=(ctx.today||'').slice(0,7);
+    const present=calendarMonth,past=ctx.months.filter(m=>m<=present);
     const initial=ctx.months.includes(preferred)?preferred:past[past.length-1]||ctx.months[ctx.months.length-1];
     $('month').value=initial;$('dash-month').value=initial;$('city-month').value=initial;setBusy(false);
     if(activeView==='city')City.load();else if(activeView==='dashboard')loadDashboard();else loadRows();
@@ -227,8 +282,10 @@ $('rent-form').addEventListener('submit',event=>{
 });
 function dashStatus(text,kind='neutral'){$('dash-status').textContent=text;$('dash-status').dataset.kind=kind}
 function activateView(view){
+  if(view!=='dashboard')stopPatrol();
   activeView=view;$('city-view').hidden=view!=='city';$('dashboard-view').hidden=view!=='dashboard';$('entry-view').hidden=view!=='entry';
   ['city','dashboard','entry'].forEach(v=>$('nav-'+v).setAttribute('aria-pressed',String(view===v)));City.wake();
+  document.querySelector('.wrap').scrollIntoView({block:'start'});
 }
 ['city','dashboard','entry'].forEach(view=>$('nav-'+view).addEventListener('click',()=>{
   if(busy||dashBusy||City.loading||activeView===view)return;
@@ -239,22 +296,45 @@ function activateView(view){
     if(view==='entry'){filter='all';loadRows()}else if(view==='city')City.load();else loadDashboard();
   });
 }));
-$('dash-month').addEventListener('change',()=>{attentionFilter='all';$('attention-search').value='';loadDashboard()});
+function updateMonthControls(){
+  const select=$('dash-month'),months=Array.from(select.options,o=>o.value),i=months.indexOf(select.value),locked=busy||dashBusy||City.loading;
+  $('dash-prev-month').disabled=locked||i<=0;$('dash-next-month').disabled=locked||i<0||i>=months.length-1;
+  $('dash-current').disabled=locked||!months.includes(calendarMonth)||select.value===calendarMonth;
+}
+function changeDashboardMonth(month){
+  if(busy||dashBusy||City.loading||!Array.from($('dash-month').options).some(o=>o.value===month))return;
+  $('dash-month').value=month;attentionFilter='all';$('attention-search').value='';loadDashboard();
+}
+$('dash-month').addEventListener('change',()=>changeDashboardMonth($('dash-month').value));
+['prev','next'].forEach(direction=>$('dash-'+direction+'-month').addEventListener('click',()=>{
+  const select=$('dash-month'),option=select.options[select.selectedIndex+(direction==='prev'?-1:1)];if(option)changeDashboardMonth(option.value);
+}));
+$('dash-current').addEventListener('click',()=>changeDashboardMonth(calendarMonth));
+$('jump-patrol').addEventListener('click',()=>{$('patrol-panel').scrollIntoView({block:'start'});$('patrol-select').focus({preventScroll:true})});
+$('jump-overdue').addEventListener('click',()=>{attentionFilter='overdue';renderAttention();$('attention-panel').scrollIntoView({block:'start'});$('attention-search').focus({preventScroll:true})});
 function loadDashboard(){
-  stopPatrol();
+  stopPatrol();patrolPayments=null;
   const month=$('dash-month').value,seq=++dashRequest;dashBusy=true;dashData=null;$('dash-content').hidden=true;
   dashStatus('正在彙整各月份資料…','busy');updateControls();
   google.script.run.withSuccessHandler(data=>{
     if(seq!==dashRequest||month!==$('dash-month').value)return;
     dashBusy=false;dashData=data;renderDashboard();updateControls();
-    dashStatus('戰情室已更新。以下指標依帳表目前紀錄計算。','success');
+    dashStatus('已更新 · 以下金額依帳表紀錄計算。','success');
+    // Reuse the existing read-only API for actual receipt dates; dashboard totals stay independent.
+    google.script.run.withSuccessHandler(payments=>{
+      if(seq!==dashRequest||dashData?.month!==month)return;
+      patrolPayments=new Map(payments.map(r=>[r.row,r]));renderPatrolRecords();renderPatrolDialogue();
+    }).withFailureHandler(()=>{
+      if(seq!==dashRequest||dashData?.month!==month)return;
+      patrolPayments=false;renderPatrolRecords();
+    }).getRows(month);
   }).withFailureHandler(error=>{
     if(seq!==dashRequest)return;dashBusy=false;dashData=null;$('dash-content').hidden=true;updateControls();
     dashStatus('無法彙整資料：'+(error?.message||error)+'。請重新讀取，或先使用收款登錄。','error');
   }).getDashboard(month);
 }
 function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el}
-function cash(value){return value===null?'待確認':'NT$ '+money(value)}
+function cash(value){return value==null?'待確認':'NT$ '+money(value)}
 function renderDashboard(){
   patrolIndex=0;
   const d=dashData,s=d.summary;$('dash-content').hidden=false;
@@ -318,74 +398,142 @@ function openDashboardRecord(row){if(busy||dashBusy||!dashData)return;$('month')
 function openCityRecord(month,row){if(busy||dashBusy||City.loading)return;$('month').value=month;filter='all';activateView('entry');loadRows(undefined,row);$('entry-view').scrollIntoView({block:'start'})}
 
 
-let patrolRunning=false,patrolToken=0;
-function stopPatrol(){patrolRunning=false;patrolToken++;if('speechSynthesis' in window)window.speechSynthesis.cancel();$('patrol-start').disabled=false;$('patrol-stop').disabled=true}
+let patrolRunning=false,patrolSpeaking=false,patrolToken=0,patrolIndex=0,patrolPayments=null;
+let finishPatrolSpeech=null,finishPatrolDelay=null;
+function updatePatrolControls(){
+  const props=dashData?.properties||[],empty=!props.length;
+  $('patrol-start').disabled=empty||patrolRunning||patrolSpeaking;
+  $('patrol-stop').disabled=!patrolRunning&&!patrolSpeaking;
+  $('patrol-speak').disabled=empty||patrolRunning||patrolSpeaking;
+  $('patrol-select').disabled=empty;
+  $('patrol-prev').disabled=empty||patrolIndex<=0;
+  $('patrol-next').disabled=empty||patrolIndex>=props.length-1;
+  $('patrol-open').disabled=empty||!props[patrolIndex]?.firstRow;
+}
+function stopPatrol(){
+  patrolRunning=false;patrolSpeaking=false;patrolToken++;
+  if(finishPatrolSpeech)finishPatrolSpeech(false);
+  if(finishPatrolDelay)finishPatrolDelay();
+  if('speechSynthesis' in window)window.speechSynthesis.cancel();
+  updatePatrolControls();
+}
 function patrolVoice(){
- if(!('speechSynthesis' in window))return null;
- const voices=window.speechSynthesis.getVoices();
- const zh=voices.filter(v=>/^zh[-_](TW|Hant)/i.test(v.lang));
- return zh.find(v=>/female|woman|女|美佳|雅婷|曉臻|怡君/i.test(v.name))||zh[0]||voices.find(v=>/^zh/i.test(v.lang))||null;
+  const voices=window.speechSynthesis?.getVoices()||[];
+  const taiwan=voices.filter(v=>/^zh[-_]TW$/i.test(v.lang));
+  return taiwan.find(v=>/female|woman|女|美佳|雅婷|曉臻|怡君/i.test(v.name))||taiwan[0]||voices.find(v=>/^zh[-_]Hant/i.test(v.lang))||null;
 }
 function speakPatrol(text,token){
- return new Promise(resolve=>{
-  if(!('speechSynthesis' in window)){ $('patrol-voice-note').textContent='此瀏覽器不支援語音播報，已保留文字對話。';resolve();return}
-  const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=.94;u.pitch=1.06;const v=patrolVoice();if(v)u.voice=v;
-  let finished=false;const done=()=>{if(!finished){finished=true;resolve()}};
-  u.onend=done;u.onerror=done;
-  if(token!==patrolToken){done();return}
-  window.speechSynthesis.speak(u);
- });
+  return new Promise(resolve=>{
+    if(token!==patrolToken||!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){resolve(false);return}
+    const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=.94;const voice=patrolVoice();if(voice)u.voice=voice;
+    let finished=false,timer;
+    const done=ok=>{if(finished)return;finished=true;clearTimeout(timer);if(finishPatrolSpeech===done)finishPatrolSpeech=null;resolve(ok)};
+    finishPatrolSpeech=done;u.onend=()=>done(true);u.onerror=()=>done(false);
+    // Some mobile browsers never emit onend after cancellation or an audio failure.
+    timer=setTimeout(()=>{done(false);window.speechSynthesis.cancel()},Math.max(15000,Math.min(90000,text.length*450)));
+    try{window.speechSynthesis.speak(u)}catch(e){done(false)}
+  });
 }
-function patrolDateLines(p){const records=(dashData.records||[]).filter(r=>r.property===p.name);if(!records.length)return '尚無可確認的應收日期資料。';return records.map(r=>{const due=r.due?'應收日期 '+r.due:'應收日期未設定';return r.type+'：'+due+'，'+(r.paid?'已登錄收款':'尚未勾選已收')+'。'}).join(' ')}
+function patrolDelay(ms){
+  return new Promise(resolve=>{
+    const timer=setTimeout(done,ms);
+    function done(){clearTimeout(timer);if(finishPatrolDelay===done)finishPatrolDelay=null;resolve()}
+    finishPatrolDelay=done;
+  });
+}
+function patrolDateLines(p){
+  const records=(dashData?.records||[]).filter(r=>r.property===p.name);
+  return records.length?records.map(r=>{
+    const receipt=patrolPayments instanceof Map?patrolPayments.get(r.row):null;
+    return r.type+'：'+(r.due?'應收日期 '+r.due:'應收日期未設定')+'，實收 '+cash(r.actual)+'，'+(receipt?(receipt.date?'入帳日期 '+receipt.date:'尚未填入帳日期'):'入帳日期請至收款登錄確認')+'，'+(r.paid?'已勾選已收':'尚未勾選已收')+'。';
+  }).join(' '):'尚無可確認的收款資料。';
+}
+function propertyAmount(p,key){
+  return p[key+'Missing']>0?cash(p[key])+'（已知部分，尚待核對）':cash(p[key]);
+}
 function patrolLines(){
- const p=dashData.properties[patrolIndex],count=Number(p.count)||0,paid=Number(p.paidCount)||0;
- return ['房東：我們抵達'+p.name+'島，來看看'+dashData.month+'的房租。',
- '房東太太：'+patrolDateLines(p)+'本月共有'+count+'筆收租項目，已勾選已收'+paid+'筆，尚未勾選'+Math.max(0,count-paid)+'筆。帳表記錄實收'+cash(Number(p.actual)||0)+'元，待收'+cash(Number(p.remaining)||0)+'元。'];
+  const p=dashData?.properties[patrolIndex];if(!p)return [];
+  return ['房東：我們抵達'+p.name+'島，來看看'+dashData.month+'的房租。',
+    '房東太太：'+patrolDateLines(p)+'本月 '+p.count+' 筆收租，已勾選 '+p.paidCount+' 筆。帳表實收 '+propertyAmount(p,'actual')+'，待收 '+propertyAmount(p,'remaining')+'。'];
 }
 async function startPatrol(){
- if(!dashData||!dashData.properties.length||patrolRunning)return;
- stopPatrol();patrolRunning=true;const token=patrolToken;
- $('patrol-start').disabled=true;$('patrol-stop').disabled=false;
- for(let i=0;i<dashData.properties.length&&patrolRunning&&token===patrolToken;i++){
-  patrolIndex=i;renderPatrol();
-  $('patrol-voice-note').textContent='巡視中：第 '+(i+1)+' / '+dashData.properties.length+' 島';
-  for(const line of patrolLines()){if(!patrolRunning||token!==patrolToken)break;await speakPatrol(line,token)}
- }
- if(token===patrolToken){stopPatrol();$('patrol-voice-note').textContent='本輪巡島已完成。已收狀態來自 Google Sheets 登錄，非銀行入帳證明。'}
+  if(!dashData?.properties.length||patrolRunning||patrolSpeaking)return;
+  stopPatrol();patrolRunning=true;const token=patrolToken,total=dashData.properties.length;updatePatrolControls();
+  let textOnly=false;
+  for(let i=0;i<total&&patrolRunning&&token===patrolToken;i++){
+    patrolIndex=i;renderPatrol();
+    $('patrol-voice-note').textContent='巡視中：第 '+(i+1)+' / '+total+' 島 · 可隨時停止或選擇其他島';
+    let spoke=true;
+    for(const line of patrolLines()){
+      if(!patrolRunning||token!==patrolToken)break;
+      if(!await speakPatrol(line,token)){spoke=false;break}
+    }
+    if(token!==patrolToken)return;
+    if(!spoke){textOnly=true;$('patrol-voice-note').textContent='語音暫不可用，改為文字巡島：第 '+(i+1)+' / '+total+' 島，每島停留 6 秒。';await patrolDelay(6000)}
+  }
+  if(token===patrolToken){stopPatrol();$('patrol-voice-note').textContent='本輪 '+total+' 座島已巡視完成'+(textOnly?'（含文字巡島）':'')+'。帳表勾選不等於銀行入帳證明。'}
 }
 $('patrol-start').addEventListener('click',startPatrol);
-$('patrol-stop').addEventListener('click',()=>{stopPatrol();$('patrol-voice-note').textContent='已停止巡視'});
-$('patrol-speak').addEventListener('click',async()=>{if(!dashData||!dashData.properties.length)return;stopPatrol();const token=patrolToken;for(const line of patrolLines()){if(token!==patrolToken)break;await speakPatrol(line,token)}});
-
-
+$('patrol-stop').addEventListener('click',()=>{stopPatrol();$('patrol-voice-note').textContent='已停止，停留在目前島嶼。'});
+$('patrol-speak').addEventListener('click',async()=>{
+  if(!dashData?.properties.length||patrolRunning||patrolSpeaking)return;
+  stopPatrol();patrolSpeaking=true;const token=patrolToken;updatePatrolControls();
+  $('patrol-voice-note').textContent='正在播報本島，可按停止。';
+  let ok=true;for(const line of patrolLines()){if(token!==patrolToken)return;if(!await speakPatrol(line,token)){ok=false;break}}
+  if(token===patrolToken){stopPatrol();$('patrol-voice-note').textContent=ok?'本島播報完成。':'此裝置目前無法播報，請閱讀本島對話與逐筆收款。'}
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stopPatrol();$('patrol-voice-note').textContent='離開頁面後已停止巡島，回來時可重新開始。'}});
+window.addEventListener('pagehide',stopPatrol);
 const patrolOutfits={landlord:{business:'🧑‍💼',casual:'🧑',builder:'👷',detective:'🕵️',formal:'🤵'},landlady:{business:'👩‍💼',casual:'👩',builder:'👷‍♀️',detective:'🕵️‍♀️',formal:'👩‍🎓'}};
-function setPatrolOutfits(){const couple=$('patrol-couple');if(!couple)return;const kids=couple.querySelectorAll('span');if(kids.length<2)return;kids[0].textContent=patrolOutfits.landlord[$('landlord-outfit').value]||patrolOutfits.landlord.business;kids[1].textContent=patrolOutfits.landlady[$('landlady-outfit').value]||patrolOutfits.landlady.business}
-['landlord-outfit','landlady-outfit'].forEach(id=>$(id).addEventListener('change',setPatrolOutfits));
-setPatrolOutfits();
-let patrolIndex=0;
-function renderPatrol(){
- const couple=$('patrol-couple');if(couple){couple.classList.remove('moving');requestAnimationFrame(()=>couple.classList.add('moving'))}
- const select=$('patrol-select'),out=$('patrol-dialogue');if(!select||!out)return;
- const props=(dashData&&dashData.properties)||[];select.replaceChildren();out.replaceChildren();
- if(!props.length){out.append(node('div','本月份尚無可巡視的收租物件，請先確認帳表資料。','patrol-bubble'));return}
- patrolIndex=Math.min(Math.max(patrolIndex,0),props.length-1);
- props.forEach((p,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=p.name;select.append(o)});select.value=String(patrolIndex);
- const p=props[patrolIndex],month=dashData.month;
- const landlord=node('div',undefined,'patrol-bubble');landlord.append(node('strong','👨 房東'),document.createTextNode('我們一起抵達「'+p.name+'島」！來確認 '+month+' 的房租登錄狀況。'));
- const wife=node('div',undefined,'patrol-bubble');wife.append(node('strong','👩 房東太太'));
- const paid=Number(p.paidCount)||0,count=Number(p.count)||0;
- const actual=Number(p.actual)||0,remaining=Number(p.remaining)||0;
- const route=$('patrol-route');route.replaceChildren();props.forEach((item,i)=>{const b=document.createElement('button');b.type='button';b.className='patrol-stop'+(i===patrolIndex?' current':'');b.textContent=(i===patrolIndex?'📍 ':'🏝️ ')+item.name;b.addEventListener('click',()=>{stopPatrol();patrolIndex=i;renderPatrol()});route.append(b)});$('patrol-state').textContent=count===0?'⚪ 尚無登錄項目':paid===count?'🟢 已全部勾選已收':paid>0?'🟡 部分項目已收':'🟠 尚未勾選已收';$('patrol-open').disabled=!p.firstRow;$('patrol-open').onclick=()=>openDashboardRecord(p.firstRow);
- let message='本月共有 '+count+' 筆收租項目，已勾選已收 '+paid+' 筆，尚未勾選 '+Math.max(0,count-paid)+' 筆。已記錄實收 '+cash(actual)+'，待收 '+cash(remaining)+'。';
- if(!count)message='本月尚未找到這座島的收租項目。';else message=patrolDateLines(p)+' '+message;
- wife.append(document.createTextNode(message));out.append(landlord,wife);
- const details=node('div','資料來源：'+month+' 月份 Google Sheets 對帳紀錄；已收依帳表勾選狀態判斷。','patrol-note');out.append(details);
- $('patrol-prev').disabled=patrolIndex===0;$('patrol-next').disabled=patrolIndex===props.length-1;
+function setPatrolOutfits(){
+  const kids=$('patrol-couple').querySelectorAll('span');
+  ['landlord','landlady'].forEach((role,i)=>{kids[i].textContent=patrolOutfits[role][$(role+'-outfit').value]||patrolOutfits[role].business});
 }
-$('patrol-prev').addEventListener('click',()=>{stopPatrol();patrolIndex--;renderPatrol()});
-$('patrol-next').addEventListener('click',()=>{stopPatrol();patrolIndex++;renderPatrol()});
-$('patrol-select').addEventListener('change',e=>{stopPatrol();patrolIndex=Number(e.target.value);renderPatrol()});
+['landlord','landlady'].forEach(role=>{
+  const select=$(role+'-outfit');
+  try{const saved=localStorage.getItem('rent-patrol-'+role);if(Object.hasOwn(patrolOutfits[role],saved))select.value=saved}catch(e){}
+  select.addEventListener('change',()=>{setPatrolOutfits();try{localStorage.setItem('rent-patrol-'+role,select.value)}catch(e){}});
+});
+setPatrolOutfits();
+function renderPatrolRecords(){
+  const out=$('patrol-records');out.replaceChildren();const p=dashData?.properties[patrolIndex];if(!p)return;
+  (dashData.records||[]).filter(r=>r.property===p.name).forEach(r=>{
+    const card=node('article',undefined,'patrol-record'),head=node('div',undefined,'patrol-record-head');
+    const label=r.issues.length?'需核對':r.remaining>0?(r.actual>0?'部分收款':'待收款'):(r.paid?'已收款':'待確認勾選');
+    head.append(node('strong',r.type),node('span',label,'badge'+(r.paid&&!r.remaining&&!r.issues.length?' paid':'')));card.append(head);
+    const receipt=patrolPayments instanceof Map?patrolPayments.get(r.row):null;
+    const values=[['應收日',r.due||'未設定'],['實際入帳日',receipt?(receipt.date||'尚未填寫'):patrolPayments===null?'讀取中…':'請至登錄確認'],['實收',cash(r.actual)],['待收',cash(r.remaining)]];
+    const dl=node('dl');values.forEach(([label,value])=>{const pair=node('div');pair.append(node('dt',label),node('dd',value));dl.append(pair)});card.append(dl);
+    if(r.issues.length)card.append(node('p',r.issues.join('；'),'patrol-note'));
+    const go=node('button','登錄這筆收款 →');go.type='button';go.setAttribute('aria-label','登錄 '+p.name+'／'+r.type);go.addEventListener('click',()=>openDashboardRecord(r.row));card.append(go);out.append(card);
+  });
+}
+function renderPatrolDialogue(){
+  const out=$('patrol-dialogue'),p=dashData?.properties[patrolIndex];if(!p)return;out.replaceChildren();const lines=[patrolLines()[0],'房東太太：本月 '+p.count+' 筆收租，已勾選 '+p.paidCount+' 筆。實收 '+propertyAmount(p,'actual')+'，待收 '+propertyAmount(p,'remaining')+'。日期與逐筆狀態都在下方。'];lines.forEach((line,i)=>{const bubble=node('div',undefined,'patrol-bubble');bubble.append(node('strong',i?'房東太太':'房東'),document.createTextNode(line.replace(/^房東(?:太太)?：/,'')));out.append(bubble)});
+}
+function renderPatrol(){
+  const props=dashData?.properties||[],select=$('patrol-select'),out=$('patrol-dialogue'),route=$('patrol-route');
+  select.replaceChildren();out.replaceChildren();route.replaceChildren();$('patrol-state').textContent='';$('patrol-island-name').textContent='';
+  if(!props.length){$('patrol-position').textContent='0 座島';out.append(node('p','本月份尚無收租物件。切換月份後，再一起出發。','patrol-bubble'));renderPatrolRecords();updatePatrolControls();return}
+  patrolIndex=Math.min(Math.max(patrolIndex,0),props.length-1);const p=props[patrolIndex];
+  $('patrol-position').textContent=(patrolIndex+1)+' / '+props.length+' 島';$('patrol-island-name').textContent=p.name;
+  props.forEach((item,i)=>{
+    const option=node('option',item.name);option.value=String(i);select.append(option);
+    const button=node('button',(i===patrolIndex?'📍 ':'')+item.name,'patrol-stop'+(i===patrolIndex?' current':''));button.type='button';button.setAttribute('aria-pressed',String(i===patrolIndex));button.addEventListener('click',()=>visitPatrol(i));route.append(button);
+  });select.value=String(patrolIndex);
+  const review=p.expectedMissing||p.actualMissing||p.remainingMissing||p.reviewCount;
+  $('patrol-state').textContent=review?'資料需核對 · 請查看逐筆收款':p.remaining>0?'仍有待收 '+cash(p.remaining):p.paidCount===p.count?'本島款項已收齊':'金額已到位 · 請確認勾選';
+  renderPatrolDialogue();
+  const couple=$('patrol-couple');couple.classList.remove('moving');requestAnimationFrame(()=>couple.classList.add('moving'));
+  $('patrol-open').onclick=()=>openDashboardRecord(p.firstRow);renderPatrolRecords();updatePatrolControls();
+  const active=route.querySelector('.current');if(active)route.scrollLeft=Math.max(0,active.offsetLeft-route.offsetLeft-route.clientWidth/2+active.offsetWidth/2);
+}
+function visitPatrol(index){stopPatrol();patrolIndex=index;renderPatrol();$('patrol-voice-note').textContent='已抵達本島，可閱讀收款或點按播報。'}
+$('patrol-prev').addEventListener('click',()=>visitPatrol(patrolIndex-1));
+$('patrol-next').addEventListener('click',()=>visitPatrol(patrolIndex+1));
+$('patrol-select').addEventListener('change',e=>visitPatrol(Number(e.target.value)));
 
+activateView('dashboard');
 loadMonths();
 </script>
 </body>
